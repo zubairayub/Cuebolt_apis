@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 
@@ -20,11 +21,18 @@ class ApiController extends Controller
             "password" => "required|confirmed"
         ]);
 
-        //Create User
+        //get user role
+        $role = $request->input('role') ?? 'user'; // Get role from input or default to 'user'
+        $roleId = Role::where('name', $role)->first()->id; // Get the role id from the roles table
+
+
+      //  Create User
         User::create([
-            "name" => $request->name,
+            "username" => $request->name,
             "email" => $request->email,
-            "password" => bcrypt($request->password)
+            "password" => bcrypt($request->password),
+            "role_id" => $roleId,
+            
         ]);
 
 
