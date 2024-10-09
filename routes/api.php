@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ApiController;
 
 // Open Routes
 Route::post("register", [ApiController::class, "register"]);
+Route::post("verifyotp", [ApiController::class, "verifyOtp"]);
 Route::post("login", [ApiController::class, "login"]);
 
 
