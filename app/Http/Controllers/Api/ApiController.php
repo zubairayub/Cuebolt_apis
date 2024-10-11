@@ -10,136 +10,299 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail; // Import Mail Facade
 use App\Mail\OtpMail; // Import OtpMail class
 use Carbon\Carbon; // Include Carbon for date formatting
+use Illuminate\Support\Str; // Import the Str class
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Facades\Socialite;
+
+
+ 
 
 
 class ApiController extends Controller
 {
 
 
-    /**
- * Register a new user.
- * 
- * POST [name, email, phone, password, password_confirmation, role (optional)]
- * 
- * @param \Illuminate\Http\Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function register(Request $request) 
-{
-    try {
-        // Validate the request inputs
-        $validated = $request->validate([
-            'name' => 'required|string|max:255', // User's name is required
-            'email' => 'nullable|string|email|max:255|unique:users', // Email is nullable, must be unique
-            'phone' => [
-                'nullable', // Phone is optional
-                'string', // Ensure phone number is string
-                'unique:users', // Ensure phone number is unique
-                'regex:/^\+?[0-9]{10,15}$/' // Accepts 10-15 digit numbers, with optional leading '+'
-            ],
-            'password' => 'required|string|confirmed|min:8', // Password must be confirmed, min 8 chars
-        ]);
+    
 
-        // Ensure either email or phone is provided
-        if (empty($validated['email']) && empty($validated['phone'])) {
+
+    public function socialiteRedirect($social){
+
+        return Socialite::driver($social)->stateless()->redirect();
+    }
+
+    
+    public function callbacksocialite(Request $request, $social)
+    {
+        // try {
+        //     // Retrieve the user's information from Facebook
+        //     $facebookUser = Socialite::driver($social)->stateless()->user();
+    
+        //     // Extract data from the social profile
+        //     $facebookId = $facebookUser->getId();
+        //     $name = $facebookUser->getName();
+        //     $email = $facebookUser->getEmail();
+        //     $phone = $facebookUser->user['phone'] ?? null; // Assuming phone number is part of the Facebook data
+        //    // $avatar = $facebookUser->getAvatar();
+    
+        //    // Check if the user exists based on facebook_id, email, or phone
+        //     $user = User::where(function($query) use ($facebookId, $email, $phone) {
+        //     $query->where('facebook_id', $facebookId)
+        //       ->orWhere('email', $email)
+        //       ->orWhere('phone', $phone);
+        //     })->first();
+
+        //         // Generate a unique username, only if the user is new
+        //         $username = $user ? $user->username : generateUniqueUsername($name, $facebookId);
+
+        //         // Prepare update data only if the user exists
+        //         if ($user) {
+        //             $updates = array_filter([
+        //                 'email' => $user->email !== $email ? $email : null,
+        //                 'phone' => $user->phone !== $phone ? $phone : null,
+        //                 'facebook_id' => $user->facebook_id !== $facebookId ? $facebookId : null,
+        //             ]);
+
+        //             // Update only if there are changes
+        //             if ($updates) {
+        //                 $user->update(array_merge($updates, ['username' => $username]));
+        //             }
+        //                 } else {
+        //                     // If the user doesn't exist, create a new one
+        //                     $user = User::create([
+        //                         'username' => $username, // Ensure unique username
+        //                         'email' => $email ?? null, // Use Facebook email if available
+        //                         'phone' => $phone ?? null, // Use Facebook phone if available
+        //                         'facebook_id' => $facebookId, // Store Facebook ID
+        //                         'password' => bcrypt(Str::random(16)), // Generate a random password
+        //                         'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
+        //                         //'avatar' => $avatar, // Store user's avatar
+        //                     ]);
+        //                 }
+                
+        //                 // You can generate a token for the user if needed (for API-based apps)
+        //                 $token = $user->createToken('Facebook Login')->accessToken;
+                
+        //                 return response()->json([
+        //                     'status' => true,
+        //                     'message' => 'User logged in successfully.',
+        //                     'data' => [
+        //                         'user' => $user,
+        //                         'token' => $token,
+        //                     ]
+        //                 ], 200);
+                
+        // }
+        try {
+            // Retrieve the user's information from the social platform (Facebook or Google)
+            $socialUser = Socialite::driver($social)->stateless()->user();
+    
+            // Extract data from the social profile
+            $socialId = $socialUser->getId();
+            $name = $socialUser->getName();
+            $email = $socialUser->getEmail();
+            $phone = $socialUser->user['phone'] ?? null; // Assuming phone number might be available
+            
+            // Check if the user exists based on social_id (Facebook or Google), email, or phone
+            $user = User::where(function($query) use ($socialId, $email, $phone) {
+                $query->where('facebook_id', $socialId) // For Facebook login
+                      ->orWhere('google_id', $socialId) // For Google login
+                      ->orWhere('email', $email);
+                      // Only include phone in the query if it's not empty or null
+                    if (!empty($phone)) {
+                        $query->orWhere('phone', $phone);
+                    }
+            })->first();
+    
+            // Generate a unique username
+            $username = generateUniqueUsername($name, $socialId);
+    
+            if ($user) {
+                // Prepare data for update
+                $updatedData = [
+                    'username' => $username !== $user->username ? $username : null, // Update only if changed
+                    'email' => $email !== $user->email ? $email : null, // Update email if changed
+                    'phone' => $phone !== $user->phone ? $phone : null, // Update phone if changed
+                    $social === 'facebook' ? 'facebook_id' : 'google_id' => $socialId, // Set appropriate social ID
+                ];
+    
+                // Filter out null values
+                $updatedData = array_filter($updatedData);
+    
+                // Update user if there's any data to change
+                if (!empty($updatedData)) {
+                    $user->update($updatedData);
+                }
+            } else {
+                // If the user doesn't exist, create a new one
+                $user = User::create([
+                    'username' => $username, // Use the generated unique username
+                    'email' => $email ?? null, // Use email if available
+                    'phone' => $phone ?? null, // Use phone if available
+                    'facebook_id' => $social === 'facebook' ? $socialId : null, // Store Facebook ID
+                    'google_id' => $social === 'google' ? $socialId : null, // Store Google ID
+                    'password' => bcrypt(Str::random(16)), // Generate a random password
+                    'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
+                ]);
+            }
+    
+            // Generate a token for the user if needed (for API-based apps)
+            $token = $user->createToken('Social Login')->accessToken;
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'User logged in successfully.',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ]
+            ], 200);
+    
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Either email or phone number is required.',
-            ], 422); // 422 Unprocessable Entity
+                'message' => 'An error occurred during Facebook login.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Prepend "+" to phone number if it's missing
-        if (!empty($validated['phone']) && substr($validated['phone'], 0, 1) !== '+') {
-            $validated['phone'] = '+' . $validated['phone'];
-        }
-
-        // Get role from input or default to 'user'
-        $role = $request->input('role', 'user');
-        $roleId = Role::where('name', $role)->value('id'); // Get role ID, use value() for faster querying
-
-        // Generate a 6-digit OTP
-        $otp = rand(100000, 999999);
-
-        // Create new user
-        $user = User::create([
-            'username' => $validated['name'],
-            'email' => $validated['email'] ?? null, // Null if only phone is provided
-            'phone' => $validated['phone'] ?? null, // Null if only email is provided
-            'password' => bcrypt($validated['password']),
-            'role_id' => $roleId, // Foreign key from roles table
-            'otp' => $otp, // Store OTP in the user table
-        ]);
-
-        // Send OTP via email
-        if ($user->email) {
-            Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
-        }
-
-        return response()->json([
-            'status' => true,
-            'message' => 'User registered successfully. Please verify the OTP sent to your email.',
-            'data' => ['user_id' => $user->id],
-        ], 201);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'An error occurred during registration.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
+    
 
 
-/**
- * Verify the OTP sent to the user's email.
- * 
- * POST [user_id, otp]
- * 
- * @param \Illuminate\Http\Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function verifyOtp(Request $request)
-{
-    // Validate the request input
-    $request->validate([
-        'otp' => 'required|string|size:6', // Ensure OTP is the correct length
-        'user_id' => 'required|exists:users,id', // Ensure the user exists
-    ]);
 
-    // Find the user by ID
-    $user = User::find($request->user_id);
-
-    // Check if the user exists and OTP matches
-    if ($user && $user->otp === $request->otp) {
+    /**
+     * Register a new user.
+     * 
+     * POST [name, email, phone, password, password_confirmation, role (optional)]
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function register(Request $request) 
+    {
         try {
-            // Update the user, setting OTP to null and marking email as verified
-            $user->update([
-                'otp' => null, // Clear the OTP
-                'email_verified_at' => now(), // Set email_verified_at to current timestamp
+            // Custom error message
+            $messages = [
+                'username.regex' => 'Spaces are not allowed in the username.', // Custom message for regex validation
+            ];
+
+            // Validate the request inputs
+            $validated = $request->validate([
+                'username' => [
+                    'nullable',            // Allow username to be null
+                    'string',             // Must be a string
+                    'max:255',            // Maximum length is 255 characters
+                    'unique:users',       // Username must be unique in the users table if provided
+                    'regex:/^\S*$/u'      // No spaces allowed (regex ensures the string contains no whitespace)
+                ],
+                'email' => 'nullable|string|email|max:255|unique:users', // Email is nullable, must be unique
+                'phone' => [
+                    'nullable', // Phone is optional
+                    'string', // Ensure phone number is string
+                    'unique:users', // Ensure phone number is unique
+                    'regex:/^\+?[0-9]{10,15}$/' // Accepts 10-15 digit numbers, with optional leading '+'
+                ],
+                'password' => 'required|string|confirmed|min:8', // Password must be confirmed, min 8 chars
+            ], $messages);
+
+            // Ensure either email or phone is provided
+            if (empty($validated['email']) && empty($validated['phone'])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Either email or phone number is required.',
+                ], 422); // 422 Unprocessable Entity
+            }
+
+            // Prepend "+" to phone number if it's missing
+            if (!empty($validated['phone']) && substr($validated['phone'], 0, 1) !== '+') {
+                $validated['phone'] = '+' . $validated['phone'];
+            }
+
+            // Get role from input or default to 'user'
+            $role = $request->input('role', 'user');
+            $roleId = Role::where('name', $role)->value('id'); // Get role ID, use value() for faster querying
+
+            // Generate a 6-digit OTP
+            $otp = rand(100000, 999999);
+
+            // Create new user
+            $user = User::create([
+                'username' => $validated['username'] ?? null, // Use null if username is not provided,
+                'email' => $validated['email'] ?? null, // Null if only phone is provided
+                'phone' => $validated['phone'] ?? null, // Null if only email is provided
+                'password' => bcrypt($validated['password']),
+                'role_id' => $roleId, // Foreign key from roles table
+                'otp' => $otp, // Store OTP in the user table
             ]);
+
+            // Send OTP via email
+            if ($user->email) {
+                Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
+            }
 
             return response()->json([
                 'status' => true,
-                'message' => 'Email verified successfully.',
-            ]);
+                'message' => 'User registered successfully. Please verify the OTP sent to your email.',
+                'data' => ['user_id' => $user->id, 'otp' => $user->otp],
+            ], 201);
         } catch (\Exception $e) {
-            // Log any exceptions for debugging
-            \Log::error('Error during OTP verification: ' . $e->getMessage());
-
             return response()->json([
                 'status' => false,
-                'message' => 'Could not verify email. Please try again later.',
+                'message' => 'An error occurred during registration.',
+                'error' => $e->getMessage(),
             ], 500);
         }
-    } else {
-        return response()->json([
-            'status' => false,
-            'message' => 'Invalid OTP or user not found.',
-        ], 422); // Unprocessable Entity
     }
-}
+
+
+    /**
+     * Verify the OTP sent to the user's email.
+     * 
+     * POST [user_id, otp]
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyOtp(Request $request)
+    {
+        // Validate the request input
+        $request->validate([
+            'otp' => 'required|string|size:6', // Ensure OTP is the correct length
+            'user_id' => 'required|exists:users,id', // Ensure the user exists
+        ]);
+
+        // Find the user by ID
+        $user = User::find($request->user_id);
+
+        // Check if the user exists and OTP matches
+        if ($user && $user->otp === $request->otp) {
+            try {
+                // Update the user, setting OTP to null and marking email as verified
+                $user->update([
+                    'otp' => null, // Clear the OTP
+                    'email_verified_at' => now(), // Set email_verified_at to current timestamp
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Email verified successfully.',
+                ]);
+            } catch (\Exception $e) {
+                // Log any exceptions for debugging
+                \Log::error('Error during OTP verification: ' . $e->getMessage());
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Could not verify email. Please try again later.',
+                ], 500);
+            }
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP or user not found.',
+            ], 422); // Unprocessable Entity
+        }
+    }
 
 
 
@@ -223,12 +386,12 @@ public function verifyOtp(Request $request)
         ], 200); // HTTP status 200 OK
     }
 
-   /**
+    /**
      * Log the user out and revoke the access token.
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
-     */
+    */
     public function logout(Request $request)
     {
         // Ensure the user is authenticated

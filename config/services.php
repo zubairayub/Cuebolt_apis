@@ -24,6 +24,20 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'facebook' => [
+        'client_id' => env(key:'FACEBOOK_CLIENT_ID'),
+        'client_secret' => env(key:'FACEBOOK_CLIENT_SECRET'),
+        'redirect' => 'https://127.0.0.1:8000/authenticate/callback/facebook'
+
+    ],
+
+    'google' => [
+        'client_id' => env(key:'GOOGLE_CLIENT_ID'),
+        'client_secret' => env(key:'GOOGLE_CLIENT_SECRET'),
+        'redirect' => 'https://127.0.0.1:8000/authenticate/callback/google'
+
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
