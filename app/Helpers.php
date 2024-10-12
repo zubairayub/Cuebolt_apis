@@ -1,6 +1,7 @@
 <?php
 use App\Models\User;
 
+
 if (!function_exists('format_date')) {
     /**
      * Format a date to a readable format.
@@ -46,3 +47,30 @@ if (!function_exists('generateUniqueUsername')) {
         return $finalUsername;
     }
 }
+
+if (!function_exists('log_user_activity')) {
+    /**
+     * Log user activity (login, screen visit, button click, etc.)
+     *
+     * @param  int  $userId
+     * @param  string  $action
+     * @param  string|null  $token
+     * @param  string|null  $screen
+     * @param  string|null  $button
+     * @return void
+     */
+    function log_user_activity($userId, $action, $token = null, $screen = null, $button = null)
+    {
+        \App\Models\UserActivity::create([
+            'user_id' => $userId,
+            'token' => $token,
+            'action' => $action,
+            'screen' => $screen,
+            'button' => $button,
+            'started_at' => \Carbon\Carbon::now(),
+        ]);
+    }
+}
+
+
+

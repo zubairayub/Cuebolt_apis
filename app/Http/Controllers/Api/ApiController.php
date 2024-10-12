@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\UserActivity;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail; // Import Mail Facade
 use App\Mail\OtpMail; // Import OtpMail class
@@ -14,6 +15,7 @@ use Illuminate\Support\Str; // Import the Str class
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+
 
 
  
@@ -34,65 +36,7 @@ class ApiController extends Controller
     
     public function callbacksocialite(Request $request, $social)
     {
-        // try {
-        //     // Retrieve the user's information from Facebook
-        //     $facebookUser = Socialite::driver($social)->stateless()->user();
-    
-        //     // Extract data from the social profile
-        //     $facebookId = $facebookUser->getId();
-        //     $name = $facebookUser->getName();
-        //     $email = $facebookUser->getEmail();
-        //     $phone = $facebookUser->user['phone'] ?? null; // Assuming phone number is part of the Facebook data
-        //    // $avatar = $facebookUser->getAvatar();
-    
-        //    // Check if the user exists based on facebook_id, email, or phone
-        //     $user = User::where(function($query) use ($facebookId, $email, $phone) {
-        //     $query->where('facebook_id', $facebookId)
-        //       ->orWhere('email', $email)
-        //       ->orWhere('phone', $phone);
-        //     })->first();
-
-        //         // Generate a unique username, only if the user is new
-        //         $username = $user ? $user->username : generateUniqueUsername($name, $facebookId);
-
-        //         // Prepare update data only if the user exists
-        //         if ($user) {
-        //             $updates = array_filter([
-        //                 'email' => $user->email !== $email ? $email : null,
-        //                 'phone' => $user->phone !== $phone ? $phone : null,
-        //                 'facebook_id' => $user->facebook_id !== $facebookId ? $facebookId : null,
-        //             ]);
-
-        //             // Update only if there are changes
-        //             if ($updates) {
-        //                 $user->update(array_merge($updates, ['username' => $username]));
-        //             }
-        //                 } else {
-        //                     // If the user doesn't exist, create a new one
-        //                     $user = User::create([
-        //                         'username' => $username, // Ensure unique username
-        //                         'email' => $email ?? null, // Use Facebook email if available
-        //                         'phone' => $phone ?? null, // Use Facebook phone if available
-        //                         'facebook_id' => $facebookId, // Store Facebook ID
-        //                         'password' => bcrypt(Str::random(16)), // Generate a random password
-        //                         'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
-        //                         //'avatar' => $avatar, // Store user's avatar
-        //                     ]);
-        //                 }
-                
-        //                 // You can generate a token for the user if needed (for API-based apps)
-        //                 $token = $user->createToken('Facebook Login')->accessToken;
-                
-        //                 return response()->json([
-        //                     'status' => true,
-        //                     'message' => 'User logged in successfully.',
-        //                     'data' => [
-        //                         'user' => $user,
-        //                         'token' => $token,
-        //                     ]
-        //                 ], 200);
-                
-        // }
+        
         try {
             // Retrieve the user's information from the social platform (Facebook or Google)
             $socialUser = Socialite::driver($social)->stateless()->user();
@@ -330,7 +274,7 @@ class ApiController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             // Create an authentication token for the user
             $token = $user->createToken('MyAppToken')->accessToken;
-
+            
             return response()->json([
                 'status' => true,
                 'message' => 'Login Successful',
@@ -408,7 +352,12 @@ class ApiController extends Controller
             
             // Get the user's token and revoke it
             $token = $user->token();
+            
+            // Log the login activity using the helper
+            log_user_activity($user->id, 'logout', $token->id);
+            
             $token->revoke();
+
 
             return response()->json([
                 'status' => true,
