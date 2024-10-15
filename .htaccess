@@ -1,5 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Redirect all requests to the public directory
     RewriteRule ^(.*)$ public/$1 [L]
+
+    # Allow specific HTTP methods (GET, POST, PUT, DELETE)
+    <Limit GET POST PUT DELETE>
+        Allow from all
+    </Limit>
 </IfModule>

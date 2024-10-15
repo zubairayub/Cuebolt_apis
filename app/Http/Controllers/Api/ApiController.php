@@ -15,6 +15,10 @@ use Illuminate\Support\Str; // Import the Str class
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\Api\UserProfileController;
+use Jenssegers\Agent\Agent;
+
+
 
 
 
@@ -88,6 +92,11 @@ class ApiController extends Controller
                     'password' => bcrypt(Str::random(16)), // Generate a random password
                     'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
                 ]);
+
+
+                // After user creation, create the user profile using the controller
+                $profileController = new UserProfileController();
+                $profileController->createProfile($user->id);
             }
     
             // Generate a token for the user if needed (for API-based apps)
@@ -184,6 +193,11 @@ class ApiController extends Controller
                 Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
             }
 
+            
+            // After user creation, create the user profile using the controller
+            $profileController = new UserProfileController();
+            $profileController->createProfile(new Request(),$user->id);
+
             return response()->json([
                 'status' => true,
                 'message' => 'User registered successfully. Please verify the OTP sent to your email.',
@@ -274,7 +288,11 @@ class ApiController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             // Create an authentication token for the user
             $token = $user->createToken('MyAppToken')->accessToken;
-            
+           
+            //Register user device
+            // Register user device
+            getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
+
             return response()->json([
                 'status' => true,
                 'message' => 'Login Successful',
@@ -283,6 +301,8 @@ class ApiController extends Controller
                     'user' => $user // Optional: include user data if needed
                 ]
             ], 200); // HTTP status 200 OK
+
+           
         }
 
         // If user not found or password does not match
