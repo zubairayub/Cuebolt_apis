@@ -296,9 +296,9 @@ class ApiController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Login Successful',
-                'token' => $token,
                 'data' => [
-                    'user' => $user // Optional: include user data if needed
+                    'user' => $user,
+                    'token' => $token,
                 ]
             ], 200); // HTTP status 200 OK
 
