@@ -155,7 +155,11 @@ class ApiController extends Controller
                     'unique:users', // Ensure phone number is unique
                     'regex:/^\+?[0-9]{10,15}$/' // Accepts 10-15 digit numbers, with optional leading '+'
                 ],
-                'password' => 'required|string|confirmed|min:8', // Password must be confirmed, min 8 chars
+                'password' => 'nullable|string|confirmed|min:8', // Password must be confirmed, min 8 chars
+                'fcm_token' => 'nullable|string|max:255',  // FCM token validation (optional)
+                'type' => 'nullable|string|max:255',  // FCM token validation (optional)
+                'facebook_id' => 'nullable|string|max:255|unique:users',  
+                'google_id' => 'nullable|string|max:255|unique:users',  
             ], $messages);
 
             // Ensure either email or phone is provided
@@ -178,14 +182,35 @@ class ApiController extends Controller
             // Generate a 6-digit OTP
             $otp = rand(100000, 999999);
 
+            // Check if the user is registering via Google or Facebook
+            if (in_array($validated['type'], ['google', 'facebook'])) {
+            // Generate a random password for users registering via social platforms
+            $password = bcrypt(Str::random(12));  // Generates a 12-character random password
+            } else {
+            // Otherwise, ensure the password is required and encrypt it
+            if (empty($validated['password'])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Password is required.',
+                ], 422); // Return error if password is missing
+            }
+
+            // Encrypt the password if it's provided
+            $password = bcrypt($validated['password']);
+            }
+
             // Create new user
             $user = User::create([
                 'username' => $validated['username'] ?? null, // Use null if username is not provided,
                 'email' => $validated['email'] ?? null, // Null if only phone is provided
                 'phone' => $validated['phone'] ?? null, // Null if only email is provided
-                'password' => bcrypt($validated['password']),
+                'password' => $password,
                 'role_id' => $roleId, // Foreign key from roles table
                 'otp' => $otp, // Store OTP in the user table
+                'fcm_token' => $validated['fcm_token'] ?? null, // Add FCM token if provided, otherwise null
+                'social_id' => $validated['type'] ?? null,
+                'facebook_id' => $validated['facebook_id'] ?? null,
+                'google_id' => $validated['google_id'] ?? null,
             ]);
 
             // Send OTP via email
@@ -274,18 +299,37 @@ class ApiController extends Controller
     {
         // Validate incoming request
         $request->validate([
-            'login' => 'required|string',  // This will accept email, username, or phone
-            'password' => 'required|string',
+            'login' => 'nullable|string',  // This will accept email, username, or phone
+            'password' => 'nullable|string',
+            'facebook_id' => 'nullable|string|max:255',  
+            'google_id' => 'nullable|string|max:255',  
         ]);
 
-        // Attempt to find the user by email, username, or phone
-        $user = User::where('email', $request->login)
+        
+        // Build the query dynamically based on non-null request parameters
+        $userQuery = User::query();
+
+        if (!empty($request->login)) {
+            $userQuery->where(function ($query) use ($request) {
+                $query->where('email', $request->login)
                     ->orWhere('username', $request->login)
-                    ->orWhere('phone', $request->login)
-                    ->first();
+                    ->orWhere('phone', $request->login);
+            });
+        }
+
+        if (!empty($request->facebook_id)) {
+            $userQuery->orWhere('facebook_id', $request->facebook_id);
+        }
+
+        if (!empty($request->google_id)) {
+            $userQuery->orWhere('google_id', $request->google_id);
+        }
+
+        // Execute the query and get the first matching user
+        $user = $userQuery->first();
 
         // Check if the user exists and password matches
-        if ($user && Hash::check($request->password, $user->password)) {
+        if ($user && (Hash::check($request->password, $user->password) || $request->filled('facebook_id') || $request->filled('google_id'))) {
             // Create an authentication token for the user
             $token = $user->createToken('MyAppToken')->accessToken;
            
@@ -293,6 +337,12 @@ class ApiController extends Controller
             // Register user device
             getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
 
+            // Check if the FCM token is provided in the request
+            if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+                
+                // Update FCM token in the users table if it's not null
+                $user->update(['fcm_token' => $request->fcm_token]);
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'Login Successful',

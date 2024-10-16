@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\UserReviewController;
 use App\Http\Controllers\Api\DurationController;
 use App\Http\Controllers\Api\PackagesController;
 use App\Http\Controllers\Api\TradesController;
+use App\Http\Controllers\Api\OrdersController;
 
 
 
@@ -148,6 +149,23 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('trades/{trade}', [TradesController::class, 'destroy']);
 });
 
+
+Route::group(['middleware' => 'auth:api'], function () {
+    // Get all orders for the authenticated user
+    Route::get('orders', [OrdersController::class, 'index']);
+
+    // Create a new order
+    Route::post('orders', [OrdersController::class, 'store']);
+
+    // Get a specific order by ID
+    Route::get('orders/{order}', [OrdersController::class, 'show']);
+
+    // Update an order by ID
+    Route::put('orders/{order}', [OrdersController::class, 'update']);
+
+    // Delete an order by ID
+    Route::delete('orders/{order}', [OrdersController::class, 'destroy']);
+});
 
 
 
