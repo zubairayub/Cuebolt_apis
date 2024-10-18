@@ -11,6 +11,14 @@ use App\Http\Controllers\Api\DurationController;
 use App\Http\Controllers\Api\PackagesController;
 use App\Http\Controllers\Api\TradesController;
 use App\Http\Controllers\Api\OrdersController;
+use App\Http\Controllers\Api\CountryController;
+use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\MarketPairController;
+use App\Http\Controllers\Api\TradingMarketController;
+use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\TradeTypeController;
+
 
 
 
@@ -167,6 +175,22 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('orders/{order}', [OrdersController::class, 'destroy']);
 });
 
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/languages', [LanguageController::class, 'index']);
+    Route::get('/countries', [CountryController::class, 'index']);
+    Route::get('/countries/{country}/cities', [CityController::class, 'getCitiesByCountry']);
+    Route::get('/cities', [CityController::class, 'index']);
+    Route::get('/market-pairs', [MarketPairController::class, 'index']);
+    Route::get('/market-pairs/{id}', [MarketPairController::class, 'show']);
+    Route::get('/market-pairs/market/{market_id}', [MarketPairController::class, 'getByMarketId']);
+    Route::get('/trading-markets', [TradingMarketController::class, 'index']);
+    Route::get('/trading-markets/{id}', [TradingMarketController::class, 'show']);
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+    Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
+    Route::get('/trade-types', [TradeTypeController::class, 'index']);
+    Route::get('/trade-types/{id}', [TradeTypeController::class, 'show']);
+});
 
 
 // Route::get('/user', function (Request $request) {
