@@ -18,7 +18,8 @@ use App\Http\Controllers\Api\MarketPairController;
 use App\Http\Controllers\Api\TradingMarketController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TradeTypeController;
-
+use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\BookmarkController;
 
 
 
@@ -29,6 +30,8 @@ use App\Http\Controllers\Api\TradeTypeController;
 Route::post("register", [ApiController::class, "register"]);
 Route::post("verifyotp", [ApiController::class, "verifyOtp"]);
 Route::post("login", [ApiController::class, "login"]);
+Route::get('/search/traders', [SearchController::class, 'searchTraders']);
+Route::get('/search/packages', [SearchController::class, 'searchPackages']);
 
 
 
@@ -193,6 +196,13 @@ Route::middleware('auth:api')->group(function () {
 });
 
 
+Route::middleware('auth:api')->group(function () {
+    // Route to bookmark a trader profile
+    Route::post('/trader/{traderProfileId}/bookmark', [BookmarkController::class, 'bookmarkTrader']);
+
+    // Route to remove a bookmark from a trader profile
+    Route::delete('/trader/{traderProfileId}/unbookmark', [BookmarkController::class, 'unbookmarkTrader']);
+});
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:api');
