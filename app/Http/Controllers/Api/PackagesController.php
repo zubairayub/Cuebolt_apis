@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Package; // Import the Package model
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 
 class PackagesController extends Controller
@@ -21,10 +22,27 @@ class PackagesController extends Controller
     public function getAllPackages()
     {
         try {
+            $limit = 10;
             // Fetch all packages from all users
-            $packages = Package::with('user')  // Eager load user information
-                ->orderBy('created_at', 'desc')  // Optionally, you can sort them by created_at
-                ->get();
+            // Fetch packages with necessary relationships and limit fields
+            // Define your query with a subquery for counting active orders
+            $packages = Package::with([
+                'user:id,username', // Eager load only the 'id' and 'username' of the user
+                'user.profile:id,user_id,profile_picture', // Eager load user profile with only the relevant columns
+                'orders' => function ($query) {
+                                $query->where('expiry_date', '>', Carbon::now()); // Only fetch active orders
+                            },
+                'orders.buyer:id', // Eager load buyer with only the relevant columns
+                'orders.buyer.profile:id,user_id,profile_picture' // Eager load buyer's profile picture
+            ])
+            ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture') // Select relevant columns
+            ->withCount(['orders as active_orders' => function ($query) {
+                $query->where('expiry_date', '>', Carbon::now()); // Count only active orders
+            }])
+            ->paginate($limit); // Paginate the results
+
+
+
 
             // Return the result as a JSON response
             return response()->json([

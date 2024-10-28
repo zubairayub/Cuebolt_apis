@@ -32,6 +32,7 @@ class UserProfile extends Model
         'location',
         'country_id',
         'city_id', 
+        'profile_picture',
     ];
 
     // Define relationships if necessary, for example, to the user table
@@ -55,4 +56,12 @@ class UserProfile extends Model
     {
         return $this->belongsTo(City::class);
     }
+
+    public function getProfilePictureUrlAttribute()
+    {
+        return $this->profile_picture 
+            ? asset('storage/' . $this->profile_picture) 
+            : asset('images/default_profile_picture.png');
+    }
+
 }

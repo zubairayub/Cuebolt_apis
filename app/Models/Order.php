@@ -39,5 +39,10 @@ class Order extends Model
     {
         return $this->belongsTo(OrderStatus::class);
     }
+
+    public function buyer()
+    {
+        return $this->belongsTo(User::class, 'user_id');  // Assuming 'user_id' in orders table relates to User
+    }
 }
 
