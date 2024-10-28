@@ -19,10 +19,11 @@ class PackagesController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getAllPackages()
+    public function getAllPackages(Request $request)
     {
         try {
-            $limit = 10;
+            $page = $request->input('page', 1);
+            $limit = $request->input('limit', 10);
             // Fetch all packages from all users
             // Fetch packages with necessary relationships and limit fields
             // Define your query with a subquery for counting active orders
