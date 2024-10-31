@@ -51,6 +51,8 @@ class Package extends Model
     {
         return $this->belongsTo(Duration::class);
     }
+
+    
     public function orders()
     {
         return $this->hasMany(Order::class);

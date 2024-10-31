@@ -61,7 +61,13 @@ class UserProfile extends Model
     {
         return $this->profile_picture 
             ? asset('storage/' . $this->profile_picture) 
-            : asset('images/default_profile_picture.png');
+            : asset('images/Profile/default_profile_picture.png');
+            
+    }
+
+    public function badge()
+    {
+        return $this->belongsTo(Badge::class);
     }
 
 }

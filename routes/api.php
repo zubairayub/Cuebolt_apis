@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TradeTypeController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\BadgeController;
 
 
 
@@ -32,6 +33,7 @@ Route::post("verifyotp", [ApiController::class, "verifyOtp"]);
 Route::post("login", [ApiController::class, "login"]);
 Route::get('/search/traders', [SearchController::class, 'searchTraders']);
 Route::get('/search/packages', [SearchController::class, 'searchPackages']);
+Route::apiResource('badges', BadgeController::class);
 
 
 
@@ -139,7 +141,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('packages/{id}', [PackagesController::class, 'destroy']);
 
     // Route to get all packages from all users
-    Route::get('all/packages', [PackagesController::class, 'getAllPackages']);
+    Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
 });
 
 

@@ -24,33 +24,57 @@ class PackagesController extends Controller
         try {
             $page = $request->input('page', 1);
             $limit = $request->input('limit', 10);
-            // Fetch all packages from all users
-            // Fetch packages with necessary relationships and limit fields
-            // Define your query with a subquery for counting active orders
-            $packages = Package::with([
-                'user:id,username', // Eager load only the 'id' and 'username' of the user
-                'user.profile:id,user_id,profile_picture', // Eager load user profile with only the relevant columns
+            
+            // Initialize the query
+            $packagesQuery = Package::with([
+                'user:id,username',
+                'user.profile:id,user_id,profile_picture,badge_id', // Include badge_id in the user profile
+                'user.profile.badge:id,description,icon', // Eager load badge details
                 'orders' => function ($query) {
-                                $query->where('expiry_date', '>', Carbon::now()); // Only fetch active orders
-                            },
-                'orders.buyer:id', // Eager load buyer with only the relevant columns
-                'orders.buyer.profile:id,user_id,profile_picture' // Eager load buyer's profile picture
+                    $query->where('expiry_date', '>', Carbon::now());
+                },
+                'orders.buyer:id',
+                'orders.buyer.profile:id,user_id,profile_picture',
+                'duration:id,duration_name' // Eager load duration details
             ])
-            ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture') // Select relevant columns
+            ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture', 'user_id', 'duration_id')
             ->withCount(['orders as active_orders' => function ($query) {
-                $query->where('expiry_date', '>', Carbon::now()); // Count only active orders
-            }])
-            ->paginate($limit); // Paginate the results
-
-
-
-
+                $query->where('expiry_date', '>', Carbon::now());
+            }]);
+    
+            // Apply filtering based on request parameters
+            if ($request->has('package_id')) {
+                $packagesQuery->where('id', $request->input('package_id'));
+            }
+    
+            if ($request->has('price')) {
+                $packagesQuery->where('price', $request->input('price'));
+            }
+    
+            if ($request->has('risk_reward_ratio')) {
+                $packagesQuery->where('risk_reward_ratio', $request->input('risk_reward_ratio'));
+            }
+    
+            if ($request->has('signals_count')) {
+                $packagesQuery->where('signals_count', $request->input('signals_count'));
+            }
+            
+            // Add rating filter for user profiles
+            if ($request->has('rating')) {
+                $packagesQuery->whereHas('user.profile', function ($query) use ($request) {
+                    $query->where('rating', '>=', $request->input('rating')); // Assuming you want to filter by minimum rating
+                });
+            }
+            
+            // Get the packages with pagination
+            $packages = $packagesQuery->paginate($limit);
+    
             // Return the result as a JSON response
             return response()->json([
                 'success' => true,
                 'data' => $packages,
             ], 200);
-
+    
         } catch (\Exception $e) {
             // Handle any errors and return a response
             return response()->json([
@@ -60,6 +84,7 @@ class PackagesController extends Controller
             ], 500);
         }
     }
+    
    
    
 
