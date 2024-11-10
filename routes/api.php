@@ -124,6 +124,7 @@ Route::prefix('durations')->group(function () {
     Route::delete('{duration}', [DurationController::class, 'destroy']); // Delete a specific duration
 });
 
+Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
 Route::group(['middleware' => 'auth:api'], function () {
     // Get all packages for the authenticated user
     Route::get('packages', [PackagesController::class, 'index']);
@@ -141,7 +142,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('packages/{id}', [PackagesController::class, 'destroy']);
 
     // Route to get all packages from all users
-    Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
+   // Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
 });
 
 
