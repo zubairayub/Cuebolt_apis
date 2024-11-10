@@ -28,7 +28,7 @@ class PackagesController extends Controller
             // Initialize the query
             $packagesQuery = Package::with([
                 'user:id,username',
-                'user.profile:id,user_id,profile_picture,badge_id', // Include badge_id in the user profile
+                'user.profile:id,user_id,profile_picture,rating,badge_id', // Include badge_id in the user profile
                 'user.profile.badge:id,description,icon', // Eager load badge details
                 'orders' => function ($query) {
                     $query->where('expiry_date', '>', Carbon::now());
