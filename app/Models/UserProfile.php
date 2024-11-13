@@ -56,6 +56,16 @@ class UserProfile extends Model
     {
         return $this->belongsTo(City::class);
     }
+    // Automatically set the default profile picture when creating the user
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            // Set a default profile picture if none is provided
+            if (empty($user->profile_picture)) {
+                $user->profile_picture = 'images/Profile/default_profile_picture.png'; // Default image path
+            }
+        });
+    }
 
     public function getProfilePictureUrlAttribute()
     {
