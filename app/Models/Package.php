@@ -66,7 +66,7 @@ class Package extends Model
 
     public function userProfile()
     {
-        return $this->belongsTo(UserProfile::class, 'user_profile_id');  // Specify the foreign key if it's not 'user_profile_id'
+        return $this->belongsTo(UserProfile::class);
     }
 
       // Default picture accessor
