@@ -64,6 +64,11 @@ class Package extends Model
         return $this->hasMany(Trade::class); // Assuming a package has many trades
     }
 
+    public function userProfile()
+    {
+        return $this->belongsTo(UserProfile::class, 'user_profile_id');  // Specify the foreign key if it's not 'user_profile_id'
+    }
+
       // Default picture accessor
       public function getPictureUrlAttribute()
       {

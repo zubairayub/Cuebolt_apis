@@ -406,6 +406,36 @@ class ApiController extends Controller
         ], 200);
     }
 
+
+        public function getAllTrades()
+    {
+        $trades = Trade::with([
+            'package.user' => function ($query) {
+                $query->with([
+                    'profile' => function ($profileQuery) {
+                        $profileQuery->with([
+                            'badge',          // Trader's badge
+                            'country',        // Trader's country
+                            'city',           // Trader's city
+                            'languages',      // Trader's languages
+                        ]);
+                    }
+                ]);
+            },
+            'marketPair',       // MarketPair relationship for Trade
+            'tradeType'         // TradeType relationship for Trade
+        ])->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Trades and related data retrieved successfully',
+            'data' => [
+                'trades' => $trades
+            ]
+        ], 200);
+    }
+
+
            
 
 

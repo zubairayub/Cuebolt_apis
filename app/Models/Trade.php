@@ -32,7 +32,7 @@ class Trade extends Model
      */
     public function package()
     {
-        return $this->belongsTo(Package::class, 'package_id');
+        return $this->belongsTo(Package::class);
     }
 
     /**
@@ -50,4 +50,6 @@ class Trade extends Model
     {
         return $this->belongsTo(TradeType::class, 'trade_type_id');
     }
+
+    
 }
