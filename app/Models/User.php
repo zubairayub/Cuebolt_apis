@@ -63,5 +63,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(Package::class);
     }
+ 
+    public function reviews()
+    {
+        return $this->hasMany(UserReview::class, 'trader_id');
+    }
+    
+    public function faqs()
+    {
+        return $this->hasMany(UserFaq::class); // Assuming a User has many FAQs
+    }
     
 }

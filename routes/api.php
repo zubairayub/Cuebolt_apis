@@ -40,6 +40,7 @@ Route::apiResource('badges', BadgeController::class);
 
 
 // Protected Routes
+Route::get('all/traders', [ApiController::class, 'getAllTraders']);
 Route::group([
     "middleware" => ["auth:api"]
 ],  function(){

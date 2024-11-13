@@ -57,4 +57,10 @@ class Package extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+
+    public function trades()
+    {
+        return $this->hasMany(Trade::class); // Assuming a package has many trades
+    }
 }

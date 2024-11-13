@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\UserActivity;
+use App\Models\Package;
+use App\Models\FAQ;
+use App\Models\Trade;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail; // Import Mail Facade
 use App\Mail\OtpMail; // Import OtpMail class
@@ -362,6 +365,48 @@ class ApiController extends Controller
             'data' => []
         ], 401); // HTTP status 401 Unauthorized
     }
+
+
+       
+    public function getAllTraders()
+    {
+        $signalTraders = User::with([
+            'profile' => function ($query) {
+                $query->with([
+                    'languages',  // Many-to-Many relationship with Language
+                    'country',    // BelongsTo relationship with Country
+                    'city',       // BelongsTo relationship with City
+                    'badge',      // BelongsTo relationship with Badge
+                ])->where('trader', 1);  // Filter by trader field in user_profiles
+            },
+            'packages' => function ($query) {  // Corrected to access packages directly on User model
+                $query->with([
+                    'orders',            // HasMany relationship with Orders
+                    'trades.marketPair', // Trade relationships, with nested MarketPair
+                    'trades.tradeType',  // Trade relationships, with nested TradeType
+                ]);
+            },
+            'reviews' => function ($query) {  // Trader reviews
+                $query->where('rating', '>=', 3); // Example condition, e.g., only reviews with rating 3+
+            },
+            'faqs',  // Assuming FAQs are related to the signal trader (can adjust if needed)
+            'packages.trades' => function ($query) {
+                $query->with(['marketPair', 'tradeType']); // Include trades with MarketPair and TradeType
+            }
+        ])->whereHas('profile', function ($query) {
+            $query->where('trader', 1);  // Ensures only users with trader status in profile are retrieved
+        })->get();
+    
+        return response()->json([
+            'status' => true,
+            'message' => 'Traders data retrieved successfully',
+            'data' => [
+                'traders' => $signalTraders
+            ]
+        ], 200);
+    }
+
+           
 
 
     /**

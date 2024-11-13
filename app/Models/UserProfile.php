@@ -70,4 +70,10 @@ class UserProfile extends Model
         return $this->belongsTo(Badge::class);
     }
 
+    public function packages()
+    {
+        return $this->hasMany(Package::class, 'user_id');
+    }
+
+
 }
