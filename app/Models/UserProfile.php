@@ -71,7 +71,7 @@ class UserProfile extends Model
     {
         return $this->profile_picture 
             ? asset('storage/' . $this->profile_picture) 
-            : asset('images/Profile/default_profile_picture.png');
+            : asset('app/public/images/Profile/default_profile_picture.png');
             
     }
 
