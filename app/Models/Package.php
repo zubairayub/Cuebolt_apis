@@ -63,4 +63,24 @@ class Package extends Model
     {
         return $this->hasMany(Trade::class); // Assuming a package has many trades
     }
+
+      // Default picture accessor
+      public function getPictureUrlAttribute()
+      {
+          return $this->picture 
+              ? asset('storage/' . $this->picture) 
+              : asset('public/images/packages/default_package_picture.png');
+      }
+  
+      // You can also set the default image during package creation (when picture is not provided)
+      protected static function boot()
+      {
+          parent::boot();
+  
+          static::creating(function ($package) {
+              if (!$package->picture) {
+                  $package->picture = 'images/packages/default_package_picture.png'; // Path to your default image
+              }
+          });
+      }
 }
