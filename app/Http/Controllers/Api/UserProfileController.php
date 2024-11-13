@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 
 use App\Models\UserProfile;
+use App\Models\User;
 use App\Models\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -153,5 +154,43 @@ class UserProfileController extends Controller
        return response()->json(['data' => $profile], 200);
    }
 
+
+   public function getAllTraders()
+   {
+       $signalTraders = User::with([
+           'profile' => function ($query) {
+               $query->with([
+                   'languages',  // Many-to-Many relationship with Language
+                   'country',    // BelongsTo relationship with Country
+                   'city',       // BelongsTo relationship with City
+                   'badge',      // BelongsTo relationship with Badge
+               ])->where('trader', 1);  // Filter by trader field in user_profiles
+           },
+           'packages' => function ($query) {  // Corrected to access packages directly on User model
+               $query->with([
+                   'orders',            // HasMany relationship with Orders
+                   'trades.marketPair', // Trade relationships, with nested MarketPair
+                   'trades.tradeType',  // Trade relationships, with nested TradeType
+               ]);
+           },
+           'reviews' => function ($query) {  // Trader reviews
+               $query->where('rating', '>=', 3); // Example condition, e.g., only reviews with rating 3+
+           },
+           'faqs',  // Assuming FAQs are related to the signal trader (can adjust if needed)
+           'packages.trades' => function ($query) {
+               $query->with(['marketPair', 'tradeType']); // Include trades with MarketPair and TradeType
+           }
+       ])->whereHas('profile', function ($query) {
+           $query->where('trader', 1);  // Ensures only users with trader status in profile are retrieved
+       })->get();
+   
+       return response()->json([
+           'status' => true,
+           'message' => 'Traders data retrieved successfully',
+           'data' => [
+               'traders' => $signalTraders
+           ]
+       ], 200);
+   }
     
 }
