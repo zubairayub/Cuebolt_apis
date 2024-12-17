@@ -254,29 +254,38 @@ class PackagesController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Find the package belonging to the authenticated user
         $package = Package::where('user_id', Auth::id())->find($id);
-
+    
+        // If the package is not found, return an error message
         if (!$package) {
             return response()->json(['message' => 'Package not found.'], 404);
         }
-
+    
         // Validate the request input
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'package_type' => 'required|in:daily,weekly,monthly,yearly,bi_yearly',
-            'signals_count' => 'required|integer',
-            'risk_reward_ratio' => 'required|numeric',
-            'price' => 'required|numeric',
+            'signals_count' => 'required|integer|min:1', // Ensure positive signals count
+            'risk_reward_ratio' => 'required|numeric|min:0', // Ensure non-negative RRR
+            'price' => 'required|numeric|min:0', // Ensure non-negative price
             'duration_id' => 'required|exists:durations,id',
             'picture' => 'nullable|url',
+            'is_challenge' => 'nullable|boolean',  // Optional boolean field
+            'market_type_id' => 'nullable|exists:trading_markets,id', // Foreign Key validation
+            'achieved_rrr' => 'nullable|numeric|min:0', // Nullable field for achieved RRR
+            'from_amount' => 'nullable|numeric|min:0', // Nullable field for 'from' amount
+            'to_amount' => 'nullable|numeric|min:0', // Nullable field for 'to' amount
+            'challenge_days' => 'nullable|integer|min:1', // Nullable field for challenge days
         ]);
-
+    
+        // If validation fails, return the errors
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
-
-        // Update the package details
+    
+        // Update the package details with the validated request data
         $package->name = $request->name;
         $package->description = $request->description;
         $package->package_type = $request->package_type;
@@ -285,15 +294,37 @@ class PackagesController extends Controller
         $package->price = $request->price;
         $package->duration_id = $request->duration_id;
         $package->picture = $request->picture;
-        $package->status = 1;  // Default to active
+    
+        // Optional fields (only update if provided)
+        if ($request->has('is_challenge')) {
+            $package->is_challenge = $request->is_challenge;
+        }
+        if ($request->has('market_type_id')) {
+            $package->market_type_id = $request->market_type_id;
+        }
+        if ($request->has('achieved_rrr')) {
+            $package->achieved_rrr = $request->achieved_rrr;
+        }
+        if ($request->has('from_amount')) {
+            $package->from_amount = $request->from_amount;
+        }
+        if ($request->has('to_amount')) {
+            $package->to_amount = $request->to_amount;
+        }
+        if ($request->has('challenge_days')) {
+            $package->challenge_days = $request->challenge_days;
+        }
+    
+        // Save the updated package
         $package->save();
-
+    
+        // Return a success response with the updated package data
         return response()->json([
-            'status' => 'success',
-            'data' => $package,
-            'message' => 'Package updated successfully.'
+            'message' => 'Package updated successfully.',
+            'data' => $package
         ], 200);
     }
+    
 
     /**
      * Remove the specified package from storage.

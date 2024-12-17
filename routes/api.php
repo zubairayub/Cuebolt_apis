@@ -20,7 +20,8 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\TradeTypeController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\BookmarkController;
-use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\Api\BadgeController;
+use App\Http\Controllers\Api\TraderDashboardController;
 
 
 
@@ -97,6 +98,12 @@ Route::group([
    Route::delete('/faqs/{id}', [FaqController::class, 'destroy']);
 });
 
+Route::group([
+    "middleware" => ["auth:api"]
+], function () {
+    // Get Trader Dashboard Data
+    Route::get('/trader/dashboard', [TraderDashboardController::class, 'showDashboard']);
+});
 
 
 Route::group([

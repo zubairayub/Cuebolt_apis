@@ -63,6 +63,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Package::class);
     }
+
+    public function signals()
+    {
+        return $this->hasMany(TradingSignal::class);
+    }
  
     public function reviews()
     {
