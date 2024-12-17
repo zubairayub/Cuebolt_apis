@@ -30,6 +30,12 @@ class Package extends Model
         'duration_id',
         'picture',
         'status',
+        'is_challenge',          // New field
+        'market_type_id',        // Foreign Key to trading_markets
+        'achieved_rrr',          // Nullable field
+        'from_amount',           // Nullable field
+        'to_amount',             // Nullable field
+        'challenge_days',        // Nullable field
     ];
 
     // Attributes to cast to specific data types
@@ -38,6 +44,11 @@ class Package extends Model
         'signals_count' => 'integer',
         'risk_reward_ratio' => 'decimal:2',
         'status' => 'boolean', // To handle the tinyint(1) for active/inactive
+        'is_challenge' => 'boolean', // Cast to boolean for challenge status
+        'achieved_rrr' => 'decimal:2', // For RRR
+        'from_amount' => 'decimal:2',  // For amount fields
+        'to_amount' => 'decimal:2',
+        'challenge_days' => 'integer', // For challenge days
     ];
 
     // Relationship with the User model (trader)
@@ -50,6 +61,11 @@ class Package extends Model
     public function duration()
     {
         return $this->belongsTo(Duration::class);
+    }
+
+    public function marketType()
+    {
+        return $this->belongsTo(TradingMarket::class, 'market_type_id');
     }
 
     
