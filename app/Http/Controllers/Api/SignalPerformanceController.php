@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SignalPerformance;
+use Illuminate\Support\Facades\Http;
 
 class SignalPerformanceController extends Controller
 {
@@ -86,5 +87,56 @@ class SignalPerformanceController extends Controller
         return response()->json($performance, 200);
     }
 
+
+    public function getLiveRRR($signalId)
+    {
+        // Fetch signal performance from the database
+        $performance = SignalPerformance::find($signalId);
+
+        if (!$performance) {
+            return response()->json(['message' => 'Signal performance not found'], 404);
+        }
+
+        // Define the trading pair (e.g., BTCUSDT)
+        //$cryptoPair = $performance->trade->crypto_pair ?? 'BTCUSDT';
+        // Validate trade relationship
+        $trade = $performance->trade;
+        if (!$trade) {
+            return response()->json(['message' => 'Trade not found'], 404);
+        }
+
+        // Validate marketPair relationship
+        $marketPair = $trade->marketPair;
+        if (!$marketPair) {
+            return response()->json(['message' => 'Market pair not found'], 404);
+        }
+
+        // Get the symbol for the crypto pair
+        $cryptoPair = $marketPair->base_currency . $marketPair->quote_currency;
+        
+        // Fetch the live price from Binance API
+        $response = Http::get("https://api.binance.com/api/v3/ticker/price?symbol={$cryptoPair}");
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Failed to fetch live price from Binance'], 500);
+        }
+
+        $livePrice = $response->json()['price'];
+
+        // Calculate RRR
+        $reward = $performance->take_profit - $performance->entry_price;
+        $risk = $performance->entry_price - $performance->stop_loss;
+        $rrr = $risk > 0 ? round($reward / $risk, 2) : null;
+
+        return response()->json([
+            'signal_id' => $signalId,
+            'crypto_pair' => $cryptoPair,
+            'live_price' => $livePrice,
+            'entry_price' => $performance->entry_price,
+            'take_profit' => $performance->take_profit,
+            'stop_loss' => $performance->stop_loss,
+            'rrr' => $rrr,
+        ], 200);
+    }
 
 }

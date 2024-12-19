@@ -21,9 +21,9 @@ class SignalPerformance extends Model
     ];
 
     public function trade()
-    {
-        return $this->belongsTo(Trade::class);
-    }
+{
+    return $this->belongsTo(Trade::class, 'signal_id');
+}
 
     public function user()
     {

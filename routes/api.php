@@ -231,6 +231,6 @@ Route::middleware('auth:api')->group(function () {
 //     return $request->user();
 // })->middleware('auth:api');
 
-
+Route::get('/signal/{signalId}/rrr-live', [SignalPerformanceController::class, 'getLiveRRR']);
 
 
