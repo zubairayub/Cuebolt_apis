@@ -22,6 +22,9 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\TraderDashboardController;
+use App\Http\Controllers\Api\SignalPerformanceController;
+
+
 
 
 
@@ -153,6 +156,14 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     // Route to get all packages from all users
    // Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
+
+   // Fetch performance for a specific signal
+    Route::get('/signal/{signalId}/performance', [SignalPerformanceController::class, 'show']);
+
+    // Update performance for a specific signal
+    Route::post('/signal/{signalId}/performance', [SignalPerformanceController::class, 'update']);
+
+    Route::post('/signal/performance', [SignalPerformanceController::class, 'store']);
 });
 
 

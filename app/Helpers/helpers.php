@@ -70,7 +70,54 @@ if (!function_exists('log_user_activity')) {
             'started_at' => \Carbon\Carbon::now(),
         ]);
     }
+
+
+
+    
 }
 
 
+if (!function_exists('calculateRRR')) {
+
+    /**
+     * Calculate the Risk-Reward Ratio (RRR).
+     *
+     * @param  float  $entry
+     * @param  float  $takeProfit
+     * @param  float  $stopLoss
+     * @return array
+     */
+    function calculateRRR(float $entry, float $takeProfit, float $stopLoss): array
+    {
+        if ($stopLoss >= $entry || $takeProfit <= $entry) {
+            return [
+                'error' => 'Invalid input: Stop loss must be less than entry, and take profit must be greater than entry.',
+            ];
+        }
+
+        // Calculate risk and reward
+        $reward = abs($takeProfit - $entry);
+        $risk = abs($entry - $stopLoss);
+
+        if ($risk == 0) {
+            return [
+                'error' => 'Risk cannot be zero.',
+            ];
+        }
+
+        // Calculate the RRR
+        $rrr = $reward / $risk;
+
+        return [
+            'entry' => $entry,
+            'take_profit' => $takeProfit,
+            'stop_loss' => $stopLoss,
+            'reward' => $reward,
+            'risk' => $risk,
+            'rrr' => round($rrr, 2), // Rounded to 2 decimal places
+        ];
+    }
+
+
+}
 
