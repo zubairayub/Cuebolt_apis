@@ -150,8 +150,71 @@ class TradesController extends Controller
      * @param Trade $trade
      * @return JsonResponse
      */
-    public function update(Request $request, Trade $trade): JsonResponse
+//     public function update(Request $request, Trade $trade): JsonResponse
+// {
+//     // Step 1: Validation
+//     try {
+//         // Validate the request input
+//         $validated = $request->validate([
+//             'trade_name' => 'required|string|max:255',
+//             'market_pair_id' => 'required|exists:market_pairs,id',
+//             'trade_type_id' => 'required|exists:trade_types,id',
+//             'trade_date' => 'required|date',
+//             'entry_price' => 'required|numeric',
+//             'take_profit' => 'required|numeric',
+//             'stop_loss' => 'required|numeric',
+//             'time_frame' => 'required|string',
+//             'validity' => 'required|string',
+//             'status' => 'required|boolean',
+//         ]);
+//     } catch (\Illuminate\Validation\ValidationException $e) {
+//         // Log validation errors
+//         \Log::error('Validation failed during trade update:', $e->errors());
+
+//         // Return validation errors to the client
+//         return response()->json(['errors' => $e->errors()], 422);
+//     }
+
+//     // Step 2: Authorization check
+//     try {
+//         // Check if the authenticated user owns the package linked to the trade
+//         if ($trade->package->user_id !== auth()->id()) {
+//             \Log::warning('Unauthorized access attempt during trade update.', [
+//                 'user_id' => auth()->id(),
+//                 'package_owner_id' => $trade->package->user_id,
+//                 'trade_id' => $trade->id
+//             ]);
+//             return response()->json(['error' => 'Unauthorized access'], 403); // HTTP Status 403: Forbidden
+//         }
+//     } catch (Exception $e) {
+//         \Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
+//         return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
+//     }
+
+//     // Step 3: Update the trade
+//     try {
+//         // Update the trade with the validated data
+//         $updated = $trade->update($validated);
+
+//         // Check if the update was successful
+//         if ($updated) {
+//             \Log::info('Trade updated successfully.', ['trade_id' => $trade->id]);
+//             return response()->json($trade, 200); // HTTP Status 200: Updated successfully
+//         } else {
+//             \Log::warning('Trade update failed without exception.', ['trade_id' => $trade->id]);
+//             return response()->json(['error' => 'Failed to update trade'], 500);
+//         }
+//     } catch (Exception $e) {
+//         // Log the error and return the error message
+//         \Log::error('Trade update failed:', ['message' => $e->getMessage(), 'trade_id' => $trade->id]);
+//         return response()->json(['error' => 'Failed to update trade', 'message' => $e->getMessage()], 500);
+//     }
+// }
+
+
+public function update(Request $request, Trade $trade): JsonResponse
 {
+    
     // Step 1: Validation
     try {
         // Validate the request input
@@ -161,7 +224,8 @@ class TradesController extends Controller
             'trade_type_id' => 'required|exists:trade_types,id',
             'trade_date' => 'required|date',
             'entry_price' => 'required|numeric',
-            'take_profit' => 'required|numeric',
+            'take_profit' => 'required|array|min:1|max:2', // Ensure it's an array with 1-2 elements
+            'take_profit.*' => 'required|numeric', // Validate each array element as numeric
             'stop_loss' => 'required|numeric',
             'time_frame' => 'required|string',
             'validity' => 'required|string',
@@ -193,8 +257,18 @@ class TradesController extends Controller
 
     // Step 3: Update the trade
     try {
+        // Separate take_profit values
+        $takeProfit1 = $validated['take_profit'][0] ?? null; // First element or null
+        $takeProfit2 = $validated['take_profit'][1] ?? null; // Second element or null
+
+        // Prepare data for updating the trade
+        $tradeData = array_merge($validated, [
+            'take_profit' => $takeProfit1,
+            'take_profit_2' => $takeProfit2,
+        ]);
+
         // Update the trade with the validated data
-        $updated = $trade->update($validated);
+        $updated = $trade->update($tradeData);
 
         // Check if the update was successful
         if ($updated) {
@@ -210,6 +284,7 @@ class TradesController extends Controller
         return response()->json(['error' => 'Failed to update trade', 'message' => $e->getMessage()], 500);
     }
 }
+
 
 
     /**
