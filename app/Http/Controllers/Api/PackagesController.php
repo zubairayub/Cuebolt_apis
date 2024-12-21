@@ -8,6 +8,7 @@ use App\Models\Package; // Import the Package model
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 
 class PackagesController extends Controller
@@ -156,6 +157,11 @@ class PackagesController extends Controller
 
     public function store(Request $request)
     {
+            // Log the incoming request data
+        Log::channel('package_logs')->info('Incoming Request:', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all(),
+        ]);
         // Validate the request input
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -207,6 +213,12 @@ class PackagesController extends Controller
             // Save the package to the database
             $package->save();
 
+            // Log success response
+            Log::channel('package_logs')->info('Package Created Successfully:', [
+                'package_id' => $package->id,
+                'package_data' => $package->toArray(),
+            ]);
+
             // Return success response
             return response()->json([
                 'status' => 'success',
@@ -215,6 +227,9 @@ class PackagesController extends Controller
             ], 201); // Created status
 
         } catch (\Exception $e) {
+            Log::channel('package_logs')->error('Exception Occurred:', [
+                'error_message' => $e->getMessage(),
+            ]);
             // Handle any exceptions (e.g., database errors, unexpected issues)
             return response()->json([
                 'status' => 'error',
