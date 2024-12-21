@@ -20,6 +20,7 @@ class Trade extends Model
         'trade_date',
         'entry_price',
         'take_profit',
+        'take_profit_2',
         'stop_loss',
         'profit_loss',
         'time_frame',

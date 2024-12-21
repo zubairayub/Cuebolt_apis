@@ -68,7 +68,8 @@ class TradesController extends Controller
                 'trade_type_id' => 'required|exists:trade_types,id',
                 'trade_date' => 'required|date',
                 'entry_price' => 'required|numeric',
-                'take_profit' => 'required|numeric',
+                'take_profit' => 'required|array|min:1|max:2', // Ensure it's an array with 1-2 elements
+                'take_profit.*' => 'required|numeric', // Ensure each array element is numeric
                 'stop_loss' => 'required|numeric',
                 'time_frame' => 'required|string',
                 'validity' => 'required|string',
@@ -100,8 +101,15 @@ class TradesController extends Controller
     
         // Step 3: Create the trade
         try {
+            $takeProfit1 = $validated['take_profit'][0] ?? null; // First element or null
+            $takeProfit2 = $validated['take_profit'][1] ?? null; // Second element or null
+            // Prepare data for trade creation
+            $tradeData = array_merge($validated, [
+                'take_profit' => $takeProfit1,
+                'take_profit_2' => $takeProfit2,
+            ]);
             // Create the trade using the validated data
-            $trade = Trade::create($validated);
+            $trade = Trade::create($tradeData);
     
             \Log::info('Trade created successfully.', ['trade_id' => $trade->id]);
             return response()->json($trade, 201); // HTTP Status 201: Created

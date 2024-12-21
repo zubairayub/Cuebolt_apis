@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 
 class PackagesController extends Controller
@@ -171,7 +172,7 @@ class PackagesController extends Controller
             'risk_reward_ratio' => 'required|numeric|min:0', // Ensure non-negative RRR
             'price' => 'required|numeric|min:0', // Ensure non-negative price
             'duration_id' => 'required|exists:durations,id',
-            'picture' => 'nullable|url',
+            'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Image validation
             'is_challenge' => 'nullable|boolean',  // New field: optional and boolean
             'market_type_id' => 'nullable|exists:trading_markets,id', // Foreign Key validation
             'achieved_rrr' => 'nullable|numeric|min:0', // Nullable field for achieved RRR
@@ -189,6 +190,20 @@ class PackagesController extends Controller
         }
 
         try {
+            $userId = Auth::id();
+            $basePath = "uploads/users/{$userId}/package";
+    
+            // Ensure the user-specific folder structure exists
+            if (!Storage::disk('public')->exists($basePath)) {
+                Storage::disk('public')->makeDirectory($basePath);
+            }
+    
+            // Handle image upload if exists
+            $picturePath = null;
+            if ($request->hasFile('picture')) {
+                // Save file inside the user-specific folder
+                $picturePath = $request->file('picture')->store($basePath, 'public');
+            }
             // Create a new package
             $package = new Package();
             $package->user_id = Auth::id();  // Store the authenticated user's ID
@@ -199,7 +214,7 @@ class PackagesController extends Controller
             $package->risk_reward_ratio = $request->risk_reward_ratio;
             $package->price = $request->price;
             $package->duration_id = $request->duration_id;
-            $package->picture = $request->picture;
+            $package->picture = $picturePath; // Store the file path
             $package->is_challenge = $request->is_challenge ?? false;  // Default to false if not provided
             $package->market_type_id = $request->market_type_id;  // Foreign key, optional
             $package->achieved_rrr = $request->achieved_rrr;  // Nullable field
@@ -224,6 +239,7 @@ class PackagesController extends Controller
                 'status' => 'success',
                 'message' => 'Package created successfully!',
                 'data' => $package,
+                'image' => $imageUrl = asset("storage/{$package->picture}"),
             ], 201); // Created status
 
         } catch (\Exception $e) {
