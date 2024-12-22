@@ -154,6 +154,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Delete a package by ID
     Route::delete('packages/{id}', [PackagesController::class, 'destroy']);
 
+    Route::post('all/my_packages_traders', [PackagesController::class, 'getMyPackagesTraders']);
     // Route to get all packages from all users
    // Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
 
@@ -232,5 +233,8 @@ Route::middleware('auth:api')->group(function () {
 // })->middleware('auth:api');
 
 Route::get('/signal/{signalId}/rrr-live', [SignalPerformanceController::class, 'getLiveRRR']);
+
+Route::post('/forgot-password', [ApiController::class, 'forgotPassword']);
+Route::post('/reset-password', [ApiController::class, 'resetPassword']);
 
 

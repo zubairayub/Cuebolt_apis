@@ -132,6 +132,14 @@ return [
             'level' => 'info',
         ],
 
+        'trades_logs' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/trades_logs.log'),
+            'level' => 'info',
+        ],
+
+
+        
     ],
 
 ];

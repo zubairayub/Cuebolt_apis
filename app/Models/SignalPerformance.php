@@ -21,13 +21,17 @@ class SignalPerformance extends Model
     ];
 
     public function trade()
-{
-    return $this->belongsTo(Trade::class, 'signal_id');
-}
+    {
+        return $this->belongsTo(Trade::class, 'signal_id', 'id'); // signal_id links to trades.id
+    }
 
+    /**
+     * Define the relationship to the User model (Many-to-One).
+     */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id'); // user_id links to users.id
     }
+
 
 }

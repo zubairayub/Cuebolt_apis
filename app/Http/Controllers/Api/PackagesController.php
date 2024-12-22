@@ -86,6 +86,97 @@ class PackagesController extends Controller
             ], 500);
         }
     }
+
+
+
+
+    public function getMyPackagesTraders(Request $request)
+    {
+        try {
+            $page = $request->input('page', 1);
+            $limit = $request->input('limit', 10);
+    
+            // Determine if the user is a trader
+            $isTrader = $request->input('is_trader') == true;
+    
+            // Initialize the query
+            $packagesQuery = Package::with([
+                'user:id,username',
+                'user.profile:id,user_id,profile_picture,rating,badge_id', // Include badge_id in the user profile
+                'user.profile.badge:id,description,icon', // Eager load badge details
+                'orders' => function ($query) {
+                    $query->where('expiry_date', '>', Carbon::now());
+                },
+                'orders.buyer:id',
+                'orders.buyer.profile:id,user_id,profile_picture',
+                'duration:id,duration_name', // Eager load duration details
+                'trades:id,package_id,trade_name,entry_price,take_profit,take_profit_2,stop_loss,status,profit_loss,time_frame,validity,market_pair_id,trade_type_id', 
+                'trades.marketPair:id,symbol', // Eager load market pair
+                'trades.tradeType:id,name', // Eager load trade type
+                'trades.signalPerformance:id,signal_id,current_price,profit_loss,entry_price,take_profit,stop_loss',
+
+            ])
+            ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture', 'user_id', 'duration_id')
+            ->withCount(['orders as active_orders' => function ($query) {
+                $query->where('expiry_date', '>', Carbon::now());
+            }]);
+           
+            if ($isTrader) {
+               
+                // If user is a trader, check if they have any packages
+                $packagesQuery->where('user_id', $request->user()->id);
+            } else {
+                
+                // If user is not a trader, check if they have purchased packages
+                $packagesQuery->whereHas('orders', function ($query) use ($request) {
+                    $query->where('user_id', $request->user()->id)
+                          ->where('expiry_date', '>', Carbon::now());
+                });
+            }
+    
+            // Apply additional filters if provided in the request
+            if ($request->has('package_id')) {
+                $packagesQuery->where('id', $request->input('package_id'));
+            }
+    
+            if ($request->has('price')) {
+                $packagesQuery->where('price', $request->input('price'));
+            }
+    
+            if ($request->has('risk_reward_ratio')) {
+                $packagesQuery->where('risk_reward_ratio', $request->input('risk_reward_ratio'));
+            }
+    
+            if ($request->has('signals_count')) {
+                $packagesQuery->where('signals_count', $request->input('signals_count'));
+            }
+    
+            // Add rating filter for user profiles
+            if ($request->has('rating')) {
+                $packagesQuery->whereHas('user.profile', function ($query) use ($request) {
+                    $query->where('rating', '>=', $request->input('rating'));
+                });
+            }
+    
+            // Get the packages with pagination
+            $packages = $packagesQuery->paginate($limit);
+    
+            // Return the result as a JSON response
+            return response()->json([
+                'success' => true,
+                'data' => $packages,
+            ], 200);
+    
+        } catch (\Exception $e) {
+            // Handle any errors and return a response
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve packages.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
     
    
    
@@ -283,78 +374,180 @@ class PackagesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    // public function update(Request $request, $id)
+    // {
+    //     // Find the package belonging to the authenticated user
+    //     $package = Package::where('user_id', Auth::id())->find($id);
+    
+    //     // If the package is not found, return an error message
+    //     if (!$package) {
+    //         return response()->json(['message' => 'Package not found.'], 404);
+    //     }
+    
+    //     // Validate the request input
+    //     $validator = Validator::make($request->all(), [
+    //         'name' => 'required|string|max:255',
+    //         'description' => 'nullable|string',
+    //         'package_type' => 'required|in:daily,weekly,monthly,yearly,bi_yearly',
+    //         'signals_count' => 'required|integer|min:1', // Ensure positive signals count
+    //         'risk_reward_ratio' => 'required|numeric|min:0', // Ensure non-negative RRR
+    //         'price' => 'required|numeric|min:0', // Ensure non-negative price
+    //         'duration_id' => 'required|exists:durations,id',
+    //         'picture' => 'nullable|url',
+    //         'is_challenge' => 'nullable|boolean',  // Optional boolean field
+    //         'market_type_id' => 'nullable|exists:trading_markets,id', // Foreign Key validation
+    //         'achieved_rrr' => 'nullable|numeric|min:0', // Nullable field for achieved RRR
+    //         'from_amount' => 'nullable|numeric|min:0', // Nullable field for 'from' amount
+    //         'to_amount' => 'nullable|numeric|min:0', // Nullable field for 'to' amount
+    //         'challenge_days' => 'nullable|integer|min:1', // Nullable field for challenge days
+    //     ]);
+    
+    //     // If validation fails, return the errors
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 400);
+    //     }
+    
+    //     // Update the package details with the validated request data
+    //     $package->name = $request->name;
+    //     $package->description = $request->description;
+    //     $package->package_type = $request->package_type;
+    //     $package->signals_count = $request->signals_count;
+    //     $package->risk_reward_ratio = $request->risk_reward_ratio;
+    //     $package->price = $request->price;
+    //     $package->duration_id = $request->duration_id;
+    //     $package->picture = $request->picture;
+    
+    //     // Optional fields (only update if provided)
+    //     if ($request->has('is_challenge')) {
+    //         $package->is_challenge = $request->is_challenge;
+    //     }
+    //     if ($request->has('market_type_id')) {
+    //         $package->market_type_id = $request->market_type_id;
+    //     }
+    //     if ($request->has('achieved_rrr')) {
+    //         $package->achieved_rrr = $request->achieved_rrr;
+    //     }
+    //     if ($request->has('from_amount')) {
+    //         $package->from_amount = $request->from_amount;
+    //     }
+    //     if ($request->has('to_amount')) {
+    //         $package->to_amount = $request->to_amount;
+    //     }
+    //     if ($request->has('challenge_days')) {
+    //         $package->challenge_days = $request->challenge_days;
+    //     }
+    
+    //     // Save the updated package
+    //     $package->save();
+    
+    //     // Return a success response with the updated package data
+    //     return response()->json([
+    //         'message' => 'Package updated successfully.',
+    //         'data' => $package
+    //     ], 200);
+    // }
     public function update(Request $request, $id)
-    {
-        // Find the package belonging to the authenticated user
-        $package = Package::where('user_id', Auth::id())->find($id);
-    
-        // If the package is not found, return an error message
-        if (!$package) {
-            return response()->json(['message' => 'Package not found.'], 404);
-        }
-    
-        // Validate the request input
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'package_type' => 'required|in:daily,weekly,monthly,yearly,bi_yearly',
-            'signals_count' => 'required|integer|min:1', // Ensure positive signals count
-            'risk_reward_ratio' => 'required|numeric|min:0', // Ensure non-negative RRR
-            'price' => 'required|numeric|min:0', // Ensure non-negative price
-            'duration_id' => 'required|exists:durations,id',
-            'picture' => 'nullable|url',
-            'is_challenge' => 'nullable|boolean',  // Optional boolean field
-            'market_type_id' => 'nullable|exists:trading_markets,id', // Foreign Key validation
-            'achieved_rrr' => 'nullable|numeric|min:0', // Nullable field for achieved RRR
-            'from_amount' => 'nullable|numeric|min:0', // Nullable field for 'from' amount
-            'to_amount' => 'nullable|numeric|min:0', // Nullable field for 'to' amount
-            'challenge_days' => 'nullable|integer|min:1', // Nullable field for challenge days
+{       
+         // Log the incoming request data
+         Log::channel('trades_logs')->info('Incoming Request:', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all(),
         ]);
-    
-        // If validation fails, return the errors
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
+        
+    // Step 1: Find the package belonging to the authenticated user
+    $package = Package::where('user_id', Auth::id())->find($id);
+
+    // If the package is not found, return an error message
+    if (!$package) {
+        return response()->json(['message' => 'Package not found.'], 404);
+    }
+
+    // Step 2: Validate the request input
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'package_type' => 'required|in:daily,weekly,monthly,yearly,bi_yearly',
+        'signals_count' => 'required|integer|min:1', // Ensure positive signals count
+        'risk_reward_ratio' => 'required|numeric|min:0', // Ensure non-negative RRR
+        'price' => 'required|numeric|min:0', // Ensure non-negative price
+        'duration_id' => 'required|exists:durations,id',
+        'picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Image validation
+        'is_challenge' => 'nullable|boolean',  // Optional boolean field
+        'market_type_id' => 'nullable|exists:trading_markets,id', // Foreign Key validation
+        'achieved_rrr' => 'nullable|numeric|min:0', // Nullable field for achieved RRR
+        'from_amount' => 'nullable|numeric|min:0', // Nullable field for 'from' amount
+        'to_amount' => 'nullable|numeric|min:0', // Nullable field for 'to' amount
+        'challenge_days' => 'nullable|integer|min:1', // Nullable field for challenge days
+    ]);
+
+    // If validation fails, return the errors
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 400);
+    }
+
+    try {
+        // Step 3: Handle image upload if exists
+        $picturePath = $package->picture; // Keep the existing picture by default
+        if ($request->hasFile('picture')) {
+            $userId = Auth::id();
+            $basePath = "uploads/users/{$userId}/package";
+
+            // Ensure the user-specific folder structure exists
+            if (!Storage::disk('public')->exists($basePath)) {
+                Storage::disk('public')->makeDirectory($basePath);
+            }
+
+            // Save new file inside the user-specific folder and delete the old one if needed
+            if ($picturePath && Storage::disk('public')->exists($picturePath)) {
+                Storage::disk('public')->delete($picturePath);
+            }
+
+            $picturePath = $request->file('picture')->store($basePath, 'public');
         }
-    
-        // Update the package details with the validated request data
-        $package->name = $request->name;
-        $package->description = $request->description;
-        $package->package_type = $request->package_type;
-        $package->signals_count = $request->signals_count;
-        $package->risk_reward_ratio = $request->risk_reward_ratio;
-        $package->price = $request->price;
-        $package->duration_id = $request->duration_id;
-        $package->picture = $request->picture;
-    
-        // Optional fields (only update if provided)
-        if ($request->has('is_challenge')) {
-            $package->is_challenge = $request->is_challenge;
-        }
-        if ($request->has('market_type_id')) {
-            $package->market_type_id = $request->market_type_id;
-        }
-        if ($request->has('achieved_rrr')) {
-            $package->achieved_rrr = $request->achieved_rrr;
-        }
-        if ($request->has('from_amount')) {
-            $package->from_amount = $request->from_amount;
-        }
-        if ($request->has('to_amount')) {
-            $package->to_amount = $request->to_amount;
-        }
-        if ($request->has('challenge_days')) {
-            $package->challenge_days = $request->challenge_days;
-        }
-    
-        // Save the updated package
-        $package->save();
-    
-        // Return a success response with the updated package data
+
+        // Step 4: Update the package details with the validated request data
+        $package->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'package_type' => $request->package_type,
+            'signals_count' => $request->signals_count,
+            'risk_reward_ratio' => $request->risk_reward_ratio,
+            'price' => $request->price,
+            'duration_id' => $request->duration_id,
+            'picture' => $picturePath,
+            'is_challenge' => $request->is_challenge ?? $package->is_challenge,
+            'market_type_id' => $request->market_type_id ?? $package->market_type_id,
+            'achieved_rrr' => $request->achieved_rrr ?? $package->achieved_rrr,
+            'from_amount' => $request->from_amount ?? $package->from_amount,
+            'to_amount' => $request->to_amount ?? $package->to_amount,
+            'challenge_days' => $request->challenge_days ?? $package->challenge_days,
+        ]);
+
+        // Log success response
+        Log::channel('package_logs')->info('Package Updated Successfully:', [
+            'package_id' => $package->id,
+            'package_data' => $package->toArray(),
+        ]);
+
+        // Step 5: Return a success response with the updated package data
         return response()->json([
             'message' => 'Package updated successfully.',
-            'data' => $package
+            'data' => $package,
+            'image' => asset("storage/{$package->picture}"),
         ], 200);
+
+    } catch (\Exception $e) {
+        Log::channel('package_logs')->error('Exception Occurred During Update:', [
+            'error_message' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'An error occurred while updating the package.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
     
 
     /**

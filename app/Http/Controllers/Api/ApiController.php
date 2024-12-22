@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\Api\UserProfileController;
 use Jenssegers\Agent\Agent;
+use Illuminate\Support\Facades\Password;
 
 
 
@@ -369,10 +370,83 @@ class ApiController extends Controller
 
        
    
-
-
+    public function forgotPassword(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'email' => 'required|email',
+        ]);
     
+        // Find the user by email
+        $user = User::where('email', $request->email)->first();
+    
+        // Check if the user exists
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found with this email address.',
+            ], 404);
+        }
+    
+        // Generate the reset token
+        $token = Password::createToken($user);
+    
+        // Generate the reset link
+        $resetUrl = config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . $user->email;
+    
+        // Send the email manually
+        Mail::raw('Click the link to reset your password: ' . $resetUrl, function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject('Password Reset Link');
+        });
+    
+        return response()->json([
+            'status' => true,
+            'message' => 'Password reset link sent to your email.',
+        ], 200);
+    }
+    
+    public function resetPassword(Request $request)
+{
+    // Validate the incoming request
+    $request->validate([
+        'token' => 'required',
+        'email' => 'required|email',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
 
+    // Find the user based on the email
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid email address.',
+        ], 404);
+    }
+
+    // Verify the reset token
+    $status = Password::tokenExists($user, $request->token);
+
+    if ($status) {
+        // Update the user's password
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Optionally delete the token
+        Password::deleteToken($user);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password has been reset successfully.',
+        ], 200);
+    }
+
+    return response()->json([
+        'status' => false,
+        'message' => 'Invalid or expired token.',
+    ], 400);
+}
            
 
 

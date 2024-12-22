@@ -52,5 +52,13 @@ class Trade extends Model
         return $this->belongsTo(TradeType::class, 'trade_type_id');
     }
 
+    /**
+     * Define the relationship to the SignalPerformance model (One-to-One).
+     */
+    public function signalPerformance()
+    {
+        return $this->hasOne(SignalPerformance::class, 'signal_id', 'id'); // trades.id links to signal_performance.signal_id
+    }
+
     
 }
