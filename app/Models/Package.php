@@ -36,6 +36,8 @@ class Package extends Model
         'from_amount',           // Nullable field
         'to_amount',             // Nullable field
         'challenge_days',        // Nullable field
+        'stripe_product_id',
+        'stripe_price_id',
     ];
 
     // Attributes to cast to specific data types
@@ -49,6 +51,7 @@ class Package extends Model
         'from_amount' => 'decimal:2',  // For amount fields
         'to_amount' => 'decimal:2',
         'challenge_days' => 'integer', // For challenge days
+        
     ];
 
     // Relationship with the User model (trader)

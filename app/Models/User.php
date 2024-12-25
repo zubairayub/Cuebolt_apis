@@ -29,6 +29,7 @@ class User extends Authenticatable
         'google_id',
         'fcm_token',
         'social_id',
+        'stripe_customer_id',
     ];
 
     /**

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Package; // Import the Package model
+use Stripe\Stripe;
+use Stripe\Product;
+use Stripe\Price;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -135,9 +138,9 @@ class PackagesController extends Controller
             }
     
             // Apply additional filters if provided in the request
-            if ($request->has('package_id')) {
-                $packagesQuery->where('id', $request->input('package_id'));
-            }
+            // if ($request->has('package_id')) {
+            //     $packagesQuery->where('id', $request->input('package_id'));
+            // }
     
             if ($request->has('price')) {
                 $packagesQuery->where('price', $request->input('price'));
@@ -319,10 +322,40 @@ class PackagesController extends Controller
             // Save the package to the database
             $package->save();
 
+            // Set Stripe API Key
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            // Create a Stripe Product
+            $product = Product::create([
+                'name' => $package->name,
+                'metadata' => [
+                    'trader_id' => $package->user_id,
+                    'package_id' => $package->id,
+                ],
+            ]);
+
+            // Create a Stripe Price
+            $price = Price::create([
+                'unit_amount' => $package->price * 100, // Amount in cents
+                'currency' => 'usd',
+                'recurring' => ['interval' => 'month'],
+                'product' => $product->id,
+            ]);
+
+            // Update the package with Stripe IDs
+            $updated = $package->update([
+                'stripe_product_id' => $product->id,
+                'stripe_price_id' => $price->id,
+            ]);
+
+            Log::channel('package_logs')->info('Update Result:', ['updated' => $updated]);
+
             // Log success response
             Log::channel('package_logs')->info('Package Created Successfully:', [
                 'package_id' => $package->id,
                 'package_data' => $package->toArray(),
+                'stripe_data' => $product,
+                'stripe__price_data' => $price,
             ]);
 
             // Return success response

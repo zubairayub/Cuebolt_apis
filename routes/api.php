@@ -23,6 +23,9 @@ use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\TraderDashboardController;
 use App\Http\Controllers\Api\SignalPerformanceController;
+use App\Http\Controllers\Api\SubscriptionController;
+
+
 
 
 
@@ -227,6 +230,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Route to remove a bookmark from a trader profile
     Route::delete('/trader/{traderProfileId}/unbookmark', [BookmarkController::class, 'unbookmarkTrader']);
+
+    Route::post('/create-subscription', [SubscriptionController::class, 'createSubscription']);
 });
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -236,5 +241,9 @@ Route::get('/signal/{signalId}/rrr-live', [SignalPerformanceController::class, '
 
 Route::post('/forgot-password', [ApiController::class, 'forgotPassword']);
 Route::post('/reset-password', [ApiController::class, 'resetPassword']);
+
+
+Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+
 
 
