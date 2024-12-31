@@ -16,8 +16,8 @@ class GroupController extends Controller
         ]);
     
        // $firestore = app('firebase.firestore');
-       $firestore = app(Firestore::class)->database();
-        $database = $firestore->database();
+       $database = app(Firestore::class)->database();
+       // $database = $firestore->database();
     
         $groupId = uniqid('group_');
         $groupData = [
