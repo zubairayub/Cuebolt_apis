@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+
 
 
 class PackagesController extends Controller
@@ -322,6 +324,12 @@ class PackagesController extends Controller
             // Save the package to the database
             $package->save();
 
+
+            // Call the createGroup API
+            Http::post('http://127.0.0.1:8000/api/create-group', [
+                'packageId' => $package->id,
+                'traderId' => $package->user_id,
+            ]);
             // Set Stripe API Key
             Stripe::setApiKey(env('STRIPE_SECRET'));
 

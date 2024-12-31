@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\TraderDashboardController;
 use App\Http\Controllers\Api\SignalPerformanceController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\GroupController;
 
 
 
@@ -32,6 +33,8 @@ use App\Http\Controllers\Api\SubscriptionController;
 
 
 
+Route::post('/create-group', [GroupController::class, 'createGroup']);
+Route::post('/add-to-group', [GroupController::class, 'addMemberToGroup']);
 
 
 // Open Routes
@@ -247,3 +250,9 @@ Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
 
 
 
+Route::middleware(['firebase.auth'])->group(function () {
+    Route::get('/protected-route', function () {
+        return response()->json(['message' => 'Access granted']);
+    });
+    // Add more protected routes here...
+});
