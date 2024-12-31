@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Kreait\Firebase\Firestore;
 
 class GroupController extends Controller
 {
@@ -14,7 +15,8 @@ class GroupController extends Controller
             'traderId' => 'required|string',
         ]);
     
-        $firestore = app('firebase.firestore');
+       // $firestore = app('firebase.firestore');
+       $firestore = app(Firestore::class)->database();
         $database = $firestore->database();
     
         $groupId = uniqid('group_');

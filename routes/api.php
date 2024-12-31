@@ -31,6 +31,20 @@ use App\Http\Controllers\Api\GroupController;
 
 
 
+use Kreait\Firebase\Firestore;
+
+Route::get('/test-firestore', function () {
+    $firestore = app(Firestore::class)->database();
+    
+    $collection = $firestore->collection('test-collection');
+    $document = $collection->document('test-document');
+    $document->set([
+        'name' => 'Test Name',
+        'description' => 'Test Description',
+    ]);
+
+    return 'Firestore test document created successfully!';
+});
 
 
 Route::post('/create-group', [GroupController::class, 'createGroup']);
