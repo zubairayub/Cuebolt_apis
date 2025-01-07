@@ -206,7 +206,7 @@ class ApiController extends Controller
 
             // Create new user
             $user = User::create([
-                'username' => $validated['username'] ?? null, // Use null if username is not provided,
+                'username' => $validated['username'] ?? generateUniqueUsername(), // Use null if username is not provided,
                 'email' => $validated['email'] ?? null, // Null if only phone is provided
                 'phone' => $validated['phone'] ?? null, // Null if only email is provided
                 'password' => $password,
@@ -242,6 +242,7 @@ class ApiController extends Controller
         }
     }
 
+  
 
     /**
      * Verify the OTP sent to the user's email.

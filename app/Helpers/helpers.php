@@ -28,13 +28,28 @@ if (!function_exists('format_date')) {
 }
 
 if (!function_exists('generateUniqueUsername')) {
- function  generateUniqueUsername($baseUsername, $socialId)
+    function generateUniqueUsername($baseUsername = null, $socialId = null)
     {
-        // Create a base username
+        // Default cool, niche-related usernames if baseUsername is null
+        $defaultUsernames = [
+            'TradeProX', 'SignalAce', 'CoinWhiz', 'BlockSage', 'CryptoNinja', 
+            'TradePulse', 'SignalMaverick', 'CoinSeeker', 'CryptoKing', 'SatoshiMaster'
+        ];
+
+        // If base username is not provided, pick a random one from the default list
+        if (!$baseUsername) {
+            $baseUsername = $defaultUsernames[array_rand($defaultUsernames)];
+        }
+
+        // If social ID is null, we'll just generate a username based on the baseUsername
         $username = preg_replace('/\s+/', '_', $baseUsername); // Replace spaces with underscores
 
-        // Hash the username and socialId to ensure uniqueness
-        $hashedUsername = substr(md5($username . $socialId), 0, 8); // Use the first 8 characters of the hash
+        // If socialId is provided, hash it to ensure uniqueness, otherwise just use the base username
+        if ($socialId) {
+            $hashedUsername = substr(md5($username . $socialId), 0, 8);
+        } else {
+            $hashedUsername = substr(md5($username), 0, 8); // Only hash the baseUsername
+        }
 
         // Combine the base username with the hash
         $finalUsername = $username . '_' . $hashedUsername;
@@ -47,6 +62,8 @@ if (!function_exists('generateUniqueUsername')) {
         return $finalUsername;
     }
 }
+
+
 
 if (!function_exists('log_user_activity')) {
     /**
