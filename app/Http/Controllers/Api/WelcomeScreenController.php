@@ -34,6 +34,7 @@ class WelcomeScreenController extends Controller
              'description' => 'nullable|string',
              'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
              'status' => 'nullable|boolean',
+             'key' => 'nullable|string',
          ]);
  
          // Handle file upload if an image is provided

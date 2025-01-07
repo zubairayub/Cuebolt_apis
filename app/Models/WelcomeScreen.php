@@ -16,5 +16,6 @@ class WelcomeScreen extends Model
         'description',
         'image',
         'status',
+        'key',
     ];
 }
