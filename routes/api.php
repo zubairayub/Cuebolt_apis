@@ -25,13 +25,17 @@ use App\Http\Controllers\Api\TraderDashboardController;
 use App\Http\Controllers\Api\SignalPerformanceController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\GroupController;
-
-
-
-
-
-
 use Kreait\Firebase\Firestore;
+use App\Http\Controllers\Api\WelcomeScreenController;
+
+
+
+
+
+Route::get('/welcome-screen', [WelcomeScreenController::class, 'getWelcomeScreen']);
+Route::post('/welcome-screen', [WelcomeScreenController::class, 'storeWelcomeScreen']);
+Route::put('/welcome-screen', [WelcomeScreenController::class, 'updateWelcomeScreen']);
+
 
 Route::get('/test-firestore', function () {
     $firestore = app(Firestore::class)->database();
