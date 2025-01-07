@@ -503,7 +503,9 @@ class ApiController extends Controller
         $user->save();
     
         // Delete the OTP record after successful reset
-        $otpRecord->delete();
+        // Clear the OTP column
+        $otpRecord->otp = null;
+        $otpRecord->save();
     
         return response()->json([
             'status' => true,
