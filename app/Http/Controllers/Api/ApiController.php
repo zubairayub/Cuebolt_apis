@@ -10,6 +10,7 @@ use App\Models\UserActivity;
 use App\Models\Package;
 use App\Models\FAQ;
 use App\Models\Trade;
+use App\Models\DynamicText;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail; // Import Mail Facade
 use App\Mail\OtpMail; // Import OtpMail class
@@ -598,5 +599,15 @@ class ApiController extends Controller
                 'error' => $e->getMessage(), // Optionally include the error message for debugging
             ], 500); // HTTP status 500 Internal Server Error
         }
+    }
+
+
+    public function homescreentext()
+    {
+        $homeText = DynamicText::where('key', 'home_text')->get();
+        return response()->json([
+            'status' => true,
+            'data' => $homeText,
+        ]);
     }
 }
