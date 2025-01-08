@@ -17,6 +17,7 @@ class Package extends Model
 
     // Disable timestamps if not present
     public $timestamps = true;
+    protected $appends = ['picture_url'];
 
     // Fields that are mass assignable
     protected $fillable = [
@@ -93,7 +94,7 @@ class Package extends Model
       {
           return $this->picture 
               ? asset('storage/' . $this->picture) 
-              : asset('public/images/packages/default_package_picture.png');
+              : asset('uploads/images/packages/default_package_picture.png');
       }
   
       // You can also set the default image during package creation (when picture is not provided)
@@ -103,7 +104,7 @@ class Package extends Model
   
           static::creating(function ($package) {
               if (!$package->picture) {
-                  $package->picture = 'images/packages/default_package_picture.png'; // Path to your default image
+                  $package->picture = 'uploads/images/packages/default_package_picture.png'; // Path to your default image
               }
           });
       }

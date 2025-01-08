@@ -339,7 +339,7 @@ class ApiController extends Controller
             // Create an authentication token for the user
             $token = $user->createToken('MyAppToken')->accessToken;
            
-            //Register user device
+            
             // Register user device
             getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
 

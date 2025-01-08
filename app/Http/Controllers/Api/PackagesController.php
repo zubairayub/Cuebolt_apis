@@ -326,10 +326,11 @@ class PackagesController extends Controller
 
 
             // Call the createGroup API
-            Http::post('http://127.0.0.1:8000/api/create-group', [
-                'packageId' => $package->id,
-                'traderId' => $package->user_id,
-            ]);
+            // Http::post('http://127.0.0.1:8000/api/create-group', [
+            //     'packageId' => $package->id,
+            //     'traderId' => $package->user_id,
+            // ]);
+            
             // Set Stripe API Key
             Stripe::setApiKey(env('STRIPE_SECRET'));
 

@@ -19,7 +19,7 @@ class Badge extends Model
     public function getIconUrlAttribute()
     {
         return $this->icon 
-            ? asset('images/badges/' . $this->icon) 
-            : asset('images/badges/default_badge_icon.png');
+            ? asset('storage/uploads/images/badges/' . $this->icon) 
+            : asset('uploads/images/badges/default_badge_icon.png');
     }
 }

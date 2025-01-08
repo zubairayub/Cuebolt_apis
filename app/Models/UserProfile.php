@@ -62,7 +62,7 @@ class UserProfile extends Model
         static::creating(function ($user) {
             // Set a default profile picture if none is provided
             if (empty($user->profile_picture)) {
-                $user->profile_picture = 'public/images/profile/default_profile_picture.png'; // Default image path
+                $user->profile_picture = 'uploads/images/profile/default_profile_picture.png'; // Default image path
             }
         });
     }
@@ -71,7 +71,7 @@ class UserProfile extends Model
     {
         return $this->profile_picture 
             ? asset('storage/' . $this->profile_picture) 
-            : asset('images/profile/default_profile_picture.png');
+            : asset('uploads/images/profile/default_profile_picture.png');
             
     }
 
