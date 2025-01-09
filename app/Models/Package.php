@@ -95,8 +95,8 @@ class Package extends Model
       {
           // Generate the full URL for the picture, or fallback to the default image
           return $this->picture 
-              ? asset(Storage::url($this->picture)) 
-              : asset('uploads/images/packages/default_package_picture.png');
+              ? asset('storage/app/public/' . $this->picture) // Prepend 'storage/app/public'
+              : asset('storage/app/public/uploads/images/packages/default_package_picture.png');
       }
   
     // Set default behavior during model boot
