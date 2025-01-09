@@ -11,6 +11,7 @@ class UserProfile extends Model
 
     // If your table name doesn't follow the default Laravel convention, define it explicitly
     protected $table = 'user_profiles';  // Change if your table name is different
+    protected $appends = ['profile_picture_url'];
 
     // Define fillable attributes to protect against mass assignment
     protected $fillable = [
@@ -70,8 +71,8 @@ class UserProfile extends Model
     public function getProfilePictureUrlAttribute()
     {
         return $this->profile_picture 
-            ? asset('storage/' . $this->profile_picture) 
-            : asset('uploads/images/profile/default_profile_picture.png');
+            ? asset('storage/app/public/' . $this->profile_picture)  
+            : asset('storage/app/public/uploads/images/profile/default_profile_picture.png');
             
     }
 
