@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage; // Add this line for the Storage facade
 
 class Package extends Model
 {
@@ -92,20 +93,29 @@ class Package extends Model
       // Default picture accessor
       public function getPictureUrlAttribute()
       {
+          // Generate the full URL for the picture, or fallback to the default image
           return $this->picture 
-              ? asset('storage/' . $this->picture) 
+              ? asset(Storage::url($this->picture)) 
               : asset('uploads/images/packages/default_package_picture.png');
       }
   
-      // You can also set the default image during package creation (when picture is not provided)
-      protected static function boot()
-      {
-          parent::boot();
-  
-          static::creating(function ($package) {
-              if (!$package->picture) {
-                  $package->picture = 'uploads/images/packages/default_package_picture.png'; // Path to your default image
-              }
-          });
-      }
+    // Set default behavior during model boot
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($package) {
+            // Assign a default picture if none is provided during creation
+            if (empty($package->picture)) {
+                $package->picture = 'uploads/images/packages/default_package_picture.png'; // Path to your default image
+            }
+        });
+
+        static::updating(function ($package) {
+            // Ensure that updates retain the current picture or set a default if empty
+            if (empty($package->picture)) {
+                $package->picture = 'uploads/images/packages/default_package_picture.png'; // Path to your default image
+            }
+        });
+    }
 }

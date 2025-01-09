@@ -288,18 +288,24 @@ class PackagesController extends Controller
         try {
             $userId = Auth::id();
             $basePath = "uploads/users/{$userId}/package";
-    
+            
             // Ensure the user-specific folder structure exists
             if (!Storage::disk('public')->exists($basePath)) {
                 Storage::disk('public')->makeDirectory($basePath);
             }
-    
+            
             // Handle image upload if exists
             $picturePath = null;
             if ($request->hasFile('picture')) {
-                // Save file inside the user-specific folder
+                // Save file inside the user-specific folder and ensure proper storage path
                 $picturePath = $request->file('picture')->store($basePath, 'public');
+            } else {
+                // Set default picture path if no image is uploaded
+                $picturePath = 'uploads/images/packages/default_package_picture.png';
             }
+            
+           
+            
             // Create a new package
             $package = new Package();
             $package->user_id = Auth::id();  // Store the authenticated user's ID
@@ -330,7 +336,7 @@ class PackagesController extends Controller
             //     'packageId' => $package->id,
             //     'traderId' => $package->user_id,
             // ]);
-            
+
             // Set Stripe API Key
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
