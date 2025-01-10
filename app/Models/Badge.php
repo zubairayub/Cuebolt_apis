@@ -9,7 +9,7 @@ class Badge extends Model
 {
     use HasFactory;
     protected $fillable = ['description', 'icon', 'status'];
-    protected $appends = ['icon_url'];
+    protected $appends = ['picture_url'];
     
     public function userProfiles()
     {

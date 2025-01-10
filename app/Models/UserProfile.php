@@ -11,7 +11,7 @@ class UserProfile extends Model
 
     // If your table name doesn't follow the default Laravel convention, define it explicitly
     protected $table = 'user_profiles';  // Change if your table name is different
-    protected $appends = ['profile_picture_url'];
+    protected $appends = ['picture_url'];
 
     // Define fillable attributes to protect against mass assignment
     protected $fillable = [

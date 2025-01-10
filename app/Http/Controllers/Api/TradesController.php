@@ -20,34 +20,34 @@ class TradesController extends Controller
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
-{
-    try {
-        // Check if `package_id` is provided in the request
-        if ($request->has('package_id')) {
-            // Fetch signals for the specified package
-            $packageId = $request->input('package_id');
-            $signals = Trade::where('package_id', $packageId)->paginate(10);
+    {
+        try {
+            // Check if `package_id` is provided in the request
+            if ($request->has('package_id')) {
+                // Fetch signals for the specified package
+                $packageId = $request->input('package_id');
+                $signals = Trade::where('package_id', $packageId)->paginate(10);
+                return response()->json($signals, 200);
+            }
+
+            // Check if the user is authenticated and fetch their packages' signals
+            if (auth()->check()) {
+                // Get all package IDs associated with the authenticated user
+                $packageIds = Package::where('user_id', auth()->id())->pluck('id');
+                // Fetch signals for the authenticated user's packages
+                $signals = Trade::whereIn('package_id', $packageIds)->paginate(10);
+                return response()->json($signals, 200);
+            }
+
+            // If no parameters are provided, return all signals
+            $signals = Trade::paginate(10);
             return response()->json($signals, 200);
+
+        } catch (Exception $e) {
+            // Return an error response in case of exception
+            return response()->json(['error' => 'Failed to fetch data', 'message' => $e->getMessage()], 500);
         }
-
-        // Check if the user is authenticated and fetch their packages' signals
-        if (auth()->check()) {
-            // Get all package IDs associated with the authenticated user
-            $packageIds = Package::where('user_id', auth()->id())->pluck('id');
-            // Fetch signals for the authenticated user's packages
-            $signals = Trade::whereIn('package_id', $packageIds)->paginate(10);
-            return response()->json($signals, 200);
-        }
-
-        // If no parameters are provided, return all signals
-        $signals = Trade::paginate(10);
-        return response()->json($signals, 200);
-
-    } catch (Exception $e) {
-        // Return an error response in case of exception
-        return response()->json(['error' => 'Failed to fetch data', 'message' => $e->getMessage()], 500);
     }
-}
 
 
     /**
