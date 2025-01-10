@@ -6,7 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Messaging;
-
+use Illuminate\Support\Facades\Log;
 class FirebaseServiceProvider extends ServiceProvider
 {
     protected $messaging;
@@ -29,7 +29,7 @@ class FirebaseServiceProvider extends ServiceProvider
         try {
             // Send the message
             $response = $this->messaging->send($message);
-            
+            Log::info('Firebase response:', ['response' => $response]);
             // Log or return response if necessary
             return $response;
         } catch (\Kreait\Firebase\Exception\MessagingException $e) {
