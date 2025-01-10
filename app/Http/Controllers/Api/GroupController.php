@@ -1,59 +1,54 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Kreait\Firebase\Firestore;
+use Kreait\Firebase\Exception\DatabaseException;
+use App\Providers\FirebaseServiceProvider;
+use Illuminate\Support\Facades\Log;
 
 class GroupController extends Controller
 {
+    protected $FirebaseServiceProvider;
+
+    // Inject FirebaseServiceProvider to access Firebase services
+    public function __construct(FirebaseServiceProvider $FirebaseServiceProvider)
+    {
+        $this->FirebaseServiceProvider = $FirebaseServiceProvider;
+    }
+
     public function createGroup(Request $request)
     {
+        // Validate incoming request parameters
         $request->validate([
             'packageId' => 'required|string',
             'traderId' => 'required|string',
         ]);
-    
-       // $firestore = app('firebase.firestore');
-       $database = app(Firestore::class)->database();
-       // $database = $firestore->database();
-    
+
+        // Generate a unique group ID
         $groupId = uniqid('group_');
+
+        // Prepare the group data
         $groupData = [
             'packageId' => $request->packageId,
             'adminId' => $request->traderId,
-            'members' => [$request->traderId],
+            'members' => [$request->traderId], // Start with the trader as the admin/member
             'createdAt' => now(),
         ];
-    
-        $database->collection('groups')->document($groupId)->set($groupData);
-    
-        return response()->json(['groupId' => $groupId]);
+
+        try {
+            // Get Firestore instance from FirebaseServiceProvider
+            $database = $this->FirebaseServiceProvider->getFirestoreDatabase();
+
+            // Create the group document in Firestore
+            $database->collection('groups')->document($groupId)->set($groupData);
+            Log::info('Group created successfully with ID: ' . $groupId);
+
+            return response()->json(['groupId' => $groupId]);
+        } catch (DatabaseException $e) {
+            Log::error('Error creating group: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create group'], 500);
+        }
     }
-
-    public function addMemberToGroup(Request $request)
-{
-    $request->validate([
-        'groupId' => 'required|string',
-        'buyerId' => 'required|string',
-    ]);
-
-    $firestore = app('firebase.firestore');
-    $database = $firestore->database();
-
-    $groupRef = $database->collection('groups')->document($request->groupId);
-    $group = $groupRef->snapshot()->data();
-
-    $members = $group['members'];
-    $members[] = $request->buyerId;
-
-    $groupRef->update([
-        ['path' => 'members', 'value' => $members],
-    ]);
-
-    return response()->json(['message' => 'Buyer added to group']);
 }
 
-    
-}

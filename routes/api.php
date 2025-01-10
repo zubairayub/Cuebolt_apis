@@ -27,6 +27,9 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\GroupController;
 use Kreait\Firebase\Firestore;
 use App\Http\Controllers\Api\WelcomeScreenController;
+use App\Http\Controllers\Api\FirebaseController;
+
+
 
 
 
@@ -280,3 +283,5 @@ Route::middleware(['firebase.auth'])->group(function () {
     });
     // Add more protected routes here...
 });
+
+Route::post('/send-notification',[FirebaseController::class,'sendPushNotification']);
