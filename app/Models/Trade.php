@@ -57,8 +57,12 @@ class Trade extends Model
      */
     public function signalPerformance()
     {
-        return $this->hasOne(SignalPerformance::class, 'signal_id', 'id'); // trades.id links to signal_performance.signal_id
+        return $this->hasMany(SignalPerformance::class, 'signal_id', 'id'); // trades.id links to signal_performance.signal_id
     }
 
+    public function isFollowedByUser($userId)
+    {
+        return $this->signalPerformance()->where('user_id', $userId)->exists();
+    }
     
 }

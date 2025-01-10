@@ -310,32 +310,134 @@ public function update(Request $request, Trade $trade): JsonResponse
     }
 
 
-    public function getAllTrades()
-    {
-        $trades = Trade::with([
-            'package.user' => function ($query) {
-                $query->with([
-                    'profile' => function ($profileQuery) {
-                        $profileQuery->with([
-                            'badge',          // Trader's badge
-                            'country',        // Trader's country
-                            'city',           // Trader's city
-                            'languages',      // Trader's languages
+        public function getAllTrades()
+        {
+                // Retrieve the current authenticated user's ID (or from query parameter if needed)
+                $userId =  auth()->id();
+            
+                // Eager load related models for better performance
+                $trades = Trade::with([
+                    'package.user' => function ($query) {
+                        $query->with([
+                            'profile' => function ($profileQuery) {
+                                $profileQuery->with([
+                                    'badge',          // Trader's badge
+                                    'country',        // Trader's country
+                                    'city',           // Trader's city
+                                    'languages',      // Trader's languages
+                                ]);
+                            }
                         ]);
+                    },
+                    'marketPair',       // MarketPair relationship for Trade
+                    'tradeType',        // TradeType relationship for Trade
+                    'signalPerformance' // Eager load all signal performances for each trade
+                ])->get()->map(function ($trade) use ($userId) {
+                    // Check if the trade has an associated package and if the package has orders for the user
+                    $hasPackage = $trade->package && $trade->package->orders;
+            
+                    // Check if the user has purchased the relevant package
+                    $isUserInPackage = false;
+            
+                    // Loop through orders to find if the user has purchased this package
+                    if ($hasPackage) {
+                        $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
                     }
-                ]);
-            },
-            'marketPair',       // MarketPair relationship for Trade
-            'tradeType'         // TradeType relationship for Trade
-        ])->get();
+            
+                    // Conditionally set trade details based on package purchase
+                    if (!$isUserInPackage) {
+                        // Show stars for all other users who haven't purchased the package
+                        $trade->take_profit = '***';
+                        $trade->stop_loss = '***';
+                        $trade->entry_price = '***';
+                        $trade->take_profit_2 = '***';
+                    } else {
+                        
+                        
+                    }
+            
+                    // Check if the user has followed this trade
+                    $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
+            
+                    return $trade;
+                });
+            
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Trades and related data retrieved successfully',
+                    'data' => [
+                        'trades' => $trades
+                    ]
+                ], 200);
+        }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Trades and related data retrieved successfully',
-            'data' => [
-                'trades' => $trades
-            ]
-        ], 200);
-    }
+
+
+        public function getAllTradesguest()
+        {
+                // Retrieve the current authenticated user's ID (or from query parameter if needed)
+                $userId =  0;
+            
+                // Eager load related models for better performance
+                $trades = Trade::with([
+                    'package.user' => function ($query) {
+                        $query->with([
+                            'profile' => function ($profileQuery) {
+                                $profileQuery->with([
+                                    'badge',          // Trader's badge
+                                    'country',        // Trader's country
+                                    'city',           // Trader's city
+                                    'languages',      // Trader's languages
+                                ]);
+                            }
+                        ]);
+                    },
+                    'marketPair',       // MarketPair relationship for Trade
+                    'tradeType',        // TradeType relationship for Trade
+                    'signalPerformance' // Eager load all signal performances for each trade
+                ])->get()->map(function ($trade) use ($userId) {
+                    // Check if the trade has an associated package and if the package has orders for the user
+                    $hasPackage = $trade->package && $trade->package->orders;
+            
+                    // Check if the user has purchased the relevant package
+                    $isUserInPackage = false;
+            
+                    // Loop through orders to find if the user has purchased this package
+                    if ($hasPackage) {
+                        $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
+                    }
+            
+                    // Conditionally set trade details based on package purchase
+                    if (!$isUserInPackage) {
+                        // Show stars for all other users who haven't purchased the package
+                        $trade->take_profit = '***';
+                        $trade->stop_loss = '***';
+                        $trade->entry_price = '***';
+                        $trade->take_profit_2 = '***';
+                    } else {
+                        
+                        
+                    }
+            
+                    // Check if the user has followed this trade
+                    $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
+            
+                    return $trade;
+                });
+            
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Trades and related data retrieved successfully',
+                    'data' => [
+                        'trades' => $trades
+                    ]
+                ], 200);
+        }
+        
+    
+
+    
+    
+    
 
 }

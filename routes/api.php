@@ -69,7 +69,10 @@ Route::apiResource('badges', BadgeController::class);
 
 // Protected Routes
 
-Route::get('all/trades', [TradesController::class, 'getAllTrades']);
+Route::get('all/trades', [TradesController::class, 'getAllTrades'])->middleware('auth:api');
+
+Route::get('all/trades/guest', [TradesController::class, 'getAllTradesguest']);
+
 Route::get('all/traders', [UserProfileController::class, 'getAllTraders']);
 Route::group([
     "middleware" => ["auth:api"]

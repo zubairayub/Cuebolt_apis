@@ -39,7 +39,7 @@ class SignalPerformanceController extends Controller
         // Create a new record in the database
         $performance = SignalPerformance::create([
             'signal_id' => $request->signal_id,
-            'user_id' => $request->user_id,
+            'user_id' => auth()->id(),
             'current_price' => $request->current_price,
             'entry_price' => $request->entry_price,
             'take_profit' => $request->take_profit,
