@@ -10,6 +10,7 @@ class WelcomeScreen extends Model
     use HasFactory;
 
     protected $table = 'welcome_screen';
+    protected $appends = ['picture_url'];
 
     protected $fillable = [
         'title',
@@ -18,4 +19,14 @@ class WelcomeScreen extends Model
         'status',
         'key',
     ];
+
+
+    public function getPictureUrlAttribute()
+    {
+        // Generate the full URL for the picture, or fallback to the default image
+        return $this->image 
+            ? asset('storage/' . $this->image) // Adjust the path as needed
+            : asset('storage/app/public/uploads/images/packages/default_package_picture.png');
+    }
+
 }
