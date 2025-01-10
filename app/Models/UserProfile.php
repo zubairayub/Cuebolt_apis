@@ -68,7 +68,7 @@ class UserProfile extends Model
         });
     }
 
-    public function getProfilePictureUrlAttribute()
+    public function getPictureUrlAttribute()
     {
         return $this->profile_picture 
             ? asset('storage/app/public/' . $this->profile_picture)  

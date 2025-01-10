@@ -16,7 +16,7 @@ class Badge extends Model
         return $this->hasMany(UserProfile::class, 'badge_id');
     }
 
-    public function getIconUrlAttribute()
+    public function getPictureUrlAttribute()
     {
         return $this->icon 
             ? asset('storage/app/public/uploads/images/badges/' . $this->icon)  
