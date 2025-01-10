@@ -49,7 +49,7 @@ class FirebaseController extends Controller
             // Assuming your service method is sending the notification
            $data =  $this->firebaseServiceProvider->sendNotification($token, $title, $body, $data);
             Log::info('Notification sent successfully');
-           
+            dd($data);
         } catch (\Exception $e) {
             // Log the error if something goes wrong
             Log::error('Error sending notification', [
