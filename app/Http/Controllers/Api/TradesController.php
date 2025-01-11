@@ -653,6 +653,8 @@ public function update(Request $request, Trade $trade): JsonResponse
                 'trade_improvement' => 'nullable|string',
                 'trade_strategy' => 'nullable|string',
                 'trade_risk_management' => 'nullable|string',
+                'trade_analysis' => 'nullable|string',
+                
             ]);
     
             // Create a new trade journal entry
@@ -664,6 +666,7 @@ public function update(Request $request, Trade $trade): JsonResponse
                 'trade_improvement' => $request->trade_improvement,
                 'trade_strategy' => $request->trade_strategy,
                 'trade_risk_management' => $request->trade_risk_management,
+                'trade_analysis' => $request->trade_analysis,
             ]);
     
             // Return a success response
@@ -686,6 +689,7 @@ public function update(Request $request, Trade $trade): JsonResponse
                 'trade_improvement' => 'nullable|string',
                 'trade_strategy' => 'nullable|string',
                 'trade_risk_management' => 'nullable|string',
+                'trade_analysis' => 'nullable|string',
             ]);
 
             // Find the trade journal entry by ID
@@ -700,6 +704,7 @@ public function update(Request $request, Trade $trade): JsonResponse
                 'trade_improvement' => $request->trade_improvement,
                 'trade_strategy' => $request->trade_strategy,
                 'trade_risk_management' => $request->trade_risk_management,
+                'trade_analysis' => $request->trade_analysis,
             ]);
 
             // Return a success response
