@@ -536,9 +536,18 @@ public function update(Request $request, Trade $trade): JsonResponse
             
                     // Check if the user has followed this trade
                     $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
-            
+                    
+                     // Add image URLs to the trade
+        $trade->images = $trade->images->map(function ($image) {
+            return [
+                'image_name' => $image->image_name,
+                'image_url' => $image->picture_url, // This will return the full URL using the accessor
+            ];
+        });
                     return $trade;
                 });
+
+                
             
                 return response()->json([
                     'status' => true,

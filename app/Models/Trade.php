@@ -26,6 +26,7 @@ class Trade extends Model
         'time_frame',
         'validity',
         'status',
+        'notes',  
     ];
 
     /**
@@ -69,5 +70,7 @@ class Trade extends Model
     {
         return $this->hasMany(TradeImage::class, 'trade_id');
     }
+
+    
     
 }
