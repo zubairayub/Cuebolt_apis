@@ -64,5 +64,10 @@ class Trade extends Model
     {
         return $this->signalPerformance()->where('user_id', $userId)->exists();
     }
+
+    public function images()
+    {
+        return $this->hasMany(TradeImage::class, 'trade_id');
+    }
     
 }

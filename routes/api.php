@@ -209,7 +209,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('trades/{trade}', [TradesController::class, 'show']);
 
     // Update a trade by ID
-    Route::put('trades/{trade}', [TradesController::class, 'update']);
+    Route::post('trades/update/{trade}', [TradesController::class, 'update']);
 
     // Delete a trade by ID
     Route::delete('trades/{trade}', [TradesController::class, 'destroy']);
