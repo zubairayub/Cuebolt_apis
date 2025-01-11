@@ -611,10 +611,7 @@ public function update(Request $request, Trade $trade): JsonResponse
                     $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
                     
                      // Add image URLs to the trade
-                     $trade->images = 
-                        return [
-                           
-                        ];
+                     $trade->images = [ ];
                    
 
                     return $trade;
