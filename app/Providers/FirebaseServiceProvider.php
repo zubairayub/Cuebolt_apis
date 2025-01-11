@@ -14,7 +14,7 @@ class FirebaseServiceProvider extends ServiceProvider
     public function __construct()
     {
         // Initialize Firebase Messaging
-        $serviceAccountPath = storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json');
+        $serviceAccountPath = storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-281f2d78e3.json');
         $factory = (new Factory)->withServiceAccount($serviceAccountPath);
         $this->messaging = $factory->createMessaging();
     }
