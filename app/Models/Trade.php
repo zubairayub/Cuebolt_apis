@@ -71,6 +71,9 @@ class Trade extends Model
         return $this->hasMany(TradeImage::class, 'trade_id');
     }
 
-    
+    public function tradeJournal()
+    {
+        return $this->hasOne(TradeJournal::class, 'trade_id'); // Assuming the foreign key in TradeJournal is 'trade_id'
+    }
     
 }

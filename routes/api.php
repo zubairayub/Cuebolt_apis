@@ -213,6 +213,12 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     // Delete a trade by ID
     Route::delete('trades/{trade}', [TradesController::class, 'destroy']);
+
+        // Route to insert a new trade journal entry
+    Route::post('/trade-journal', [TradesController::class, 'store_trade_journal'])->name('trade-journal.store');
+
+    // Route to update an existing trade journal entry
+    Route::post('/update-trade-journal', [TradesController::class, 'update_trade_journal'])->name('trade-journal.update');
 });
 
 

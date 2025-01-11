@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\TradeJournal;
+use App\Models\Emotion;
 
 
 class TradesController extends Controller
@@ -509,7 +511,8 @@ public function update(Request $request, Trade $trade): JsonResponse
                     },
                     'marketPair',       // MarketPair relationship for Trade
                     'tradeType',        // TradeType relationship for Trade
-                    'signalPerformance' // Eager load all signal performances for each trade
+                    'signalPerformance', // Eager load all signal performances for each trade
+                    'tradeJournal',     // Eager load TradeJournal relationship (added this line)
                 ])->get()->map(function ($trade) use ($userId) {
                     // Check if the trade has an associated package and if the package has orders for the user
                     $hasPackage = $trade->package && $trade->package->orders;
@@ -537,6 +540,16 @@ public function update(Request $request, Trade $trade): JsonResponse
                     // Check if the user has followed this trade
                     $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
                     
+                     // Add journal data to the trade (added journal data)
+                    if ($trade->tradeJournal) {
+                        $trade->trade_journal = [
+                            'trade_decision' => $trade->tradeJournal->trade_decision,
+                            'trade_analysis' => $trade->tradeJournal->trade_analysis,
+                            'trade_reflection' => $trade->tradeJournal->trade_reflection,
+                            'trade_improvement' => $trade->tradeJournal->trade_improvement,
+                            'emotion' => $trade->tradeJournal->emotion ? $trade->tradeJournal->emotion->emotion_name : null, // Emotion related to the journal
+                        ];
+                    }
                      // Add image URLs to the trade
                     $trade->images = $trade->images->map(function ($image) {
                         return [
@@ -609,7 +622,7 @@ public function update(Request $request, Trade $trade): JsonResponse
             
                     // Check if the user has followed this trade
                     $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
-                    
+                    $trade->trade_journal = [ ];
                      // Add image URLs to the trade
                      $trade->images = [ ];
                    
@@ -625,9 +638,82 @@ public function update(Request $request, Trade $trade): JsonResponse
                     ]
                 ], 200);
         }
+
+
+
         
+        public function store_trade_journal(Request $request)
+        {
+            // Validate the incoming request data
+            $request->validate([
+                'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
+                'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
+                'trade_decision' => 'required|string|max:255',
+                'trade_reflection' => 'nullable|string',
+                'trade_improvement' => 'nullable|string',
+                'trade_strategy' => 'nullable|string',
+                'trade_risk_management' => 'nullable|string',
+            ]);
+    
+            // Create a new trade journal entry
+            $tradeJournal = TradeJournal::create([
+                'trade_id' => $request->trade_id,
+                'emotion_id' => $request->emotion_id,
+                'trade_decision' => $request->trade_decision,
+                'trade_reflection' => $request->trade_reflection,
+                'trade_improvement' => $request->trade_improvement,
+                'trade_strategy' => $request->trade_strategy,
+                'trade_risk_management' => $request->trade_risk_management,
+            ]);
+    
+            // Return a success response
+            return response()->json([
+                'status' => true,
+                'message' => 'Trade journal entry created successfully.',
+                'data' => $tradeJournal,
+            ], 201);
+        }
+    
+        public function update_trade_journal(Request $request)
+        {
+            // Validate the incoming request data
+            $request->validate([
+                'id' => 'required|exists:trade_journals,id', // Ensure the trade journal exists
+                'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
+                'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
+                'trade_decision' => 'required|string|max:255',
+                'trade_reflection' => 'nullable|string',
+                'trade_improvement' => 'nullable|string',
+                'trade_strategy' => 'nullable|string',
+                'trade_risk_management' => 'nullable|string',
+            ]);
+
+            // Find the trade journal entry by ID
+            $tradeJournal = TradeJournal::findOrFail($request->id);
+
+            // Update the trade journal entry with the new data
+            $tradeJournal->update([
+                'trade_id' => $request->trade_id,
+                'emotion_id' => $request->emotion_id,
+                'trade_decision' => $request->trade_decision,
+                'trade_reflection' => $request->trade_reflection,
+                'trade_improvement' => $request->trade_improvement,
+                'trade_strategy' => $request->trade_strategy,
+                'trade_risk_management' => $request->trade_risk_management,
+            ]);
+
+            // Return a success response
+            return response()->json([
+                'status' => true,
+                'message' => 'Trade journal entry updated successfully.',
+                'data' => $tradeJournal,
+            ], 200);
+        }
+
     
 
+
+        
     
     
     
