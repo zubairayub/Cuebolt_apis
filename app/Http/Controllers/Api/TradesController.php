@@ -542,7 +542,7 @@ public function update(Request $request, Trade $trade): JsonResponse
                         return [
                             'image_name' => $image->image_name,
                             'image_url' => $image->picture_url, // This will return the full URL using the accessor
-                            'image_visible' => "true",
+                       
                         ];
                     });
                     return $trade;
@@ -611,13 +611,11 @@ public function update(Request $request, Trade $trade): JsonResponse
                     $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
                     
                      // Add image URLs to the trade
-                     $trade->images = $trade->images->map(function ($image) {
+                     $trade->images = 
                         return [
-                            'image_name' => $image->image_name,
-                            'image_url' => $image->picture_url, // This will return the full URL using the accessor
-                            'image_visible' => "false",
+                           
                         ];
-                    });
+                   
 
                     return $trade;
                 });
