@@ -6,6 +6,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "google/apiclient": "^2.18",
         "google/cloud-firestore": "^1.47",
         "jenssegers/agent": "^2.6",
         "kreait/firebase-php": "^7.16",
@@ -32,7 +33,8 @@
         },
         "files": [
             "app/Helpers/helpers.php",
-            "app/Helpers/UserHelper.php"  
+            "app/Helpers/UserHelper.php", 
+            "app/Helpers/notification.php"
         ]
     },
     "autoload-dev": {

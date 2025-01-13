@@ -67,7 +67,7 @@ class User extends Authenticatable
 
     public function signals()
     {
-        return $this->hasMany(TradingSignal::class);
+        return $this->hasMany(Trade::class);
     }
  
     public function reviews()

@@ -19,7 +19,7 @@ class FirebaseServiceProvider extends ServiceProvider
         $this->messaging = $factory->createMessaging();
     }
 
-    public function sendNotification($token, $title, $body, $data = [])
+    public function sendNotification($token, $title, $body, $data = [], $type)
     {
         // Build the message
         $message = CloudMessage::withTarget('token', $token)
@@ -28,10 +28,14 @@ class FirebaseServiceProvider extends ServiceProvider
 
         try {
             // Send the message
-            $response = $this->messaging->send($message);
-            Log::info('Firebase response:', ['response' => $response]);
-            // Log or return response if necessary
-            return $response;
+            $this->messaging->send($message);
+
+            Log::channel('notification_logs')->info('Firebase response:', [
+                'Token' => $token,
+                'Type' => $type,
+            ]);
+
+
         } catch (\Kreait\Firebase\Exception\MessagingException $e) {
             // Handle Firebase messaging exception
             return response()->json([
@@ -40,6 +44,7 @@ class FirebaseServiceProvider extends ServiceProvider
             ], 500);
         }
     }
+
 
     public function register()
     {

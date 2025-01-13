@@ -38,11 +38,11 @@ class GroupController extends Controller
 
         try {
             // Get Firestore instance from FirebaseServiceProvider
-            $database = $this->FirebaseServiceProvider->getFirestoreDatabase();
+            // $database = $this->FirebaseServiceProvider->getFirestoreDatabase();
 
-            // Create the group document in Firestore
-            $database->collection('groups')->document($groupId)->set($groupData);
-            Log::info('Group created successfully with ID: ' . $groupId);
+            // // Create the group document in Firestore
+            // $database->collection('groups')->document($groupId)->set($groupData);
+            // Log::info('Group created successfully with ID: ' . $groupId);
 
             return response()->json(['groupId' => $groupId]);
         } catch (DatabaseException $e) {

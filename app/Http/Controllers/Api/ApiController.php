@@ -21,55 +21,57 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\Api\UserProfileController;
 use Jenssegers\Agent\Agent;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 
 
 
 
 
- 
+
 
 
 class ApiController extends Controller
 {
 
 
-    
 
 
-    public function socialiteRedirect($social){
+
+    public function socialiteRedirect($social)
+    {
 
         return Socialite::driver($social)->stateless()->redirect();
     }
 
-    
+
     public function callbacksocialite(Request $request, $social)
     {
-        
+
         try {
             // Retrieve the user's information from the social platform (Facebook or Google)
             $socialUser = Socialite::driver($social)->stateless()->user();
-    
+
             // Extract data from the social profile
             $socialId = $socialUser->getId();
             $name = $socialUser->getName();
             $email = $socialUser->getEmail();
             $phone = $socialUser->user['phone'] ?? null; // Assuming phone number might be available
-            
+
             // Check if the user exists based on social_id (Facebook or Google), email, or phone
-            $user = User::where(function($query) use ($socialId, $email, $phone) {
+            $user = User::where(function ($query) use ($socialId, $email, $phone) {
                 $query->where('facebook_id', $socialId) // For Facebook login
-                      ->orWhere('google_id', $socialId) // For Google login
-                      ->orWhere('email', $email);
-                      // Only include phone in the query if it's not empty or null
-                    if (!empty($phone)) {
-                        $query->orWhere('phone', $phone);
-                    }
+                    ->orWhere('google_id', $socialId) // For Google login
+                    ->orWhere('email', $email);
+                // Only include phone in the query if it's not empty or null
+                if (!empty($phone)) {
+                    $query->orWhere('phone', $phone);
+                }
             })->first();
-    
+
             // Generate a unique username
             $username = generateUniqueUsername($name, $socialId);
-    
+
             if ($user) {
                 // Prepare data for update
                 $updatedData = [
@@ -78,10 +80,10 @@ class ApiController extends Controller
                     'phone' => $phone !== $user->phone ? $phone : null, // Update phone if changed
                     $social === 'facebook' ? 'facebook_id' : 'google_id' => $socialId, // Set appropriate social ID
                 ];
-    
+
                 // Filter out null values
                 $updatedData = array_filter($updatedData);
-    
+
                 // Update user if there's any data to change
                 if (!empty($updatedData)) {
                     $user->update($updatedData);
@@ -103,10 +105,10 @@ class ApiController extends Controller
                 $profileController = new UserProfileController();
                 $profileController->createProfile($user->id);
             }
-    
+
             // Generate a token for the user if needed (for API-based apps)
             $token = $user->createToken('Social Login')->accessToken;
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'User logged in successfully.',
@@ -115,7 +117,7 @@ class ApiController extends Controller
                     'token' => $token,
                 ]
             ], 200);
-    
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -124,7 +126,7 @@ class ApiController extends Controller
             ], 500);
         }
     }
-    
+
 
 
 
@@ -136,7 +138,7 @@ class ApiController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function register(Request $request) 
+    public function register(Request $request)
     {
         try {
             // Custom error message
@@ -163,8 +165,8 @@ class ApiController extends Controller
                 'password' => 'nullable|string|confirmed|min:8', // Password must be confirmed, min 8 chars
                 'fcm_token' => 'nullable|string|max:255',  // FCM token validation (optional)
                 'type' => 'nullable|string|max:255',  // FCM token validation (optional)
-                'facebook_id' => 'nullable|string|max:255|unique:users',  
-                'google_id' => 'nullable|string|max:255|unique:users',  
+                'facebook_id' => 'nullable|string|max:255|unique:users',
+                'google_id' => 'nullable|string|max:255|unique:users',
             ], $messages);
 
             // Ensure either email or phone is provided
@@ -189,19 +191,19 @@ class ApiController extends Controller
 
             // Check if the user is registering via Google or Facebook
             if (in_array($validated['type'], ['google', 'facebook'])) {
-            // Generate a random password for users registering via social platforms
-            $password = bcrypt(Str::random(12));  // Generates a 12-character random password
+                // Generate a random password for users registering via social platforms
+                $password = bcrypt(Str::random(12));  // Generates a 12-character random password
             } else {
-            // Otherwise, ensure the password is required and encrypt it
-            if (empty($validated['password'])) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Password is required.',
-                ], 422); // Return error if password is missing
-            }
+                // Otherwise, ensure the password is required and encrypt it
+                if (empty($validated['password'])) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Password is required.',
+                    ], 422); // Return error if password is missing
+                }
 
-            // Encrypt the password if it's provided
-            $password = bcrypt($validated['password']);
+                // Encrypt the password if it's provided
+                $password = bcrypt($validated['password']);
             }
 
             // Create new user
@@ -223,10 +225,21 @@ class ApiController extends Controller
                 Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
             }
 
-            
+
+
             // After user creation, create the user profile using the controller
             $profileController = new UserProfileController();
-            $profileController->createProfile(new Request(),$user->id);
+            $profileController->createProfile(new Request(), $user->id);
+
+            $title = "Welcome to Cuebolt";
+            $body = "Your only Trading Marketplace";
+            $type = "Register";
+            $data = [];
+
+            if ($user->fcm_token) {
+                $token = $user->fcm_token;
+                send_push_notification($token, $title, $body, $data, $type );
+            }
 
             return response()->json([
                 'status' => true,
@@ -242,7 +255,7 @@ class ApiController extends Controller
         }
     }
 
-  
+
 
     /**
      * Verify the OTP sent to the user's email.
@@ -278,7 +291,7 @@ class ApiController extends Controller
                 ]);
             } catch (\Exception $e) {
                 // Log any exceptions for debugging
-                \Log::error('Error during OTP verification: ' . $e->getMessage());
+                Log::error('Error during OTP verification: ' . $e->getMessage());
 
                 return response()->json([
                     'status' => false,
@@ -307,11 +320,11 @@ class ApiController extends Controller
         $request->validate([
             'login' => 'nullable|string',  // This will accept email, username, or phone
             'password' => 'nullable|string',
-            'facebook_id' => 'nullable|string|max:255',  
-            'google_id' => 'nullable|string|max:255',  
+            'facebook_id' => 'nullable|string|max:255',
+            'google_id' => 'nullable|string|max:255',
         ]);
 
-        
+
         // Build the query dynamically based on non-null request parameters
         $userQuery = User::query();
 
@@ -333,22 +346,32 @@ class ApiController extends Controller
 
         // Execute the query and get the first matching user
         $user = $userQuery->first();
+        $title = "Welcome Back";
+        $body = "View your signals";
+        $type = "Login";
+        $token = $user->fcm_token;
+        $data = [];
+
+        if ($token) {
+            send_push_notification($token, $title, $body, $data, $type );
+        }
 
         // Check if the user exists and password matches
         if ($user && (Hash::check($request->password, $user->password) || $request->filled('facebook_id') || $request->filled('google_id'))) {
             // Create an authentication token for the user
             $token = $user->createToken('MyAppToken')->accessToken;
-           
-            
+
+
             // Register user device
             getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
 
             // Check if the FCM token is provided in the request
             if ($request->has('fcm_token') && !empty($request->fcm_token)) {
-                
+
                 // Update FCM token in the users table if it's not null
                 $user->update(['fcm_token' => $request->fcm_token]);
             }
+          
             return response()->json([
                 'status' => true,
                 'message' => 'Login Successful',
@@ -358,7 +381,7 @@ class ApiController extends Controller
                 ]
             ], 200); // HTTP status 200 OK
 
-           
+
         }
 
         // If user not found or password does not match
@@ -416,7 +439,7 @@ class ApiController extends Controller
             'message' => 'An OTP has been sent to your email address.',
         ], 200);
     }
-    
+
     // public function resetPassword(Request $request)
     // {
     //     // Validate the incoming request
@@ -469,20 +492,20 @@ class ApiController extends Controller
             'otp' => 'required',
             'password' => 'required|string|min:8',
         ]);
-    
+
         // Find the user based on the email
         $user = User::where('email', $request->email)->first();
-    
+
         if (!$user) {
             return response()->json([
                 'status' => false,
                 'message' => 'Invalid email address.',
             ], 404);
         }
-    
+
         // Verify the OTP
         $otpRecord = User::where('email', $request->email)->first();
-    
+
         if (!$otpRecord || $otpRecord->otp !== $request->otp) {
             return response()->json([
                 'status' => false,
@@ -491,7 +514,7 @@ class ApiController extends Controller
         }
 
 
-    
+
         // Check if OTP has expired
         // if (Carbon::now()->greaterThan($otpRecord->updated_at)) {
         //     return response()->json([
@@ -499,22 +522,22 @@ class ApiController extends Controller
         //         'message' => 'OTP has expired.'.$otpRecord->updated_at,
         //     ], 400);
         // }
-    
+
         // Update the user's password
         $user->password = Hash::make($request->password);
         $user->save();
-    
+
         // Delete the OTP record after successful reset
         // Clear the OTP column
         $otpRecord->otp = null;
         $otpRecord->save();
-    
+
         return response()->json([
             'status' => true,
             'message' => 'Password has been reset successfully.',
         ], 200);
     }
-        
+
 
 
     /**
@@ -547,7 +570,7 @@ class ApiController extends Controller
                 'email' => $userData->email,
                 'phone' => $userData->phone,
                 'created_at' => format_date($userData->created_at), // Using the helper function
-    
+
                 // Include any additional fields as necessary
             ]
         ], 200); // HTTP status 200 OK
@@ -558,7 +581,7 @@ class ApiController extends Controller
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
-    */
+     */
     public function logout(Request $request)
     {
         // Ensure the user is authenticated
@@ -572,13 +595,13 @@ class ApiController extends Controller
         try {
             // Get the currently authenticated user
             $user = Auth::user();
-            
+
             // Get the user's token and revoke it
             $token = $user->token();
-            
+
             // Log the login activity using the helper
             log_user_activity($user->id, 'logout', $token->id);
-            
+
             $token->revoke();
 
 

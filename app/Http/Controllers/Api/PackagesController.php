@@ -329,7 +329,18 @@ class PackagesController extends Controller
 
             // Save the package to the database
             $package->save();
+            
+            // Execute the query and get the first matching user
+            $user =  Auth::user();
+            $title = "Package Created";
+            $body = "View Package";
+            $type = "Package Created";
+            $token = $user->fcm_token;
+            $data = [];
 
+            if ($token) {
+                send_push_notification($token, $title, $body, $data, $type );
+            }
 
             // Call the createGroup API
             // Http::post('http://127.0.0.1:8000/api/create-group', [

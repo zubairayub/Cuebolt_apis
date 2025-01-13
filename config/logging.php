@@ -138,6 +138,12 @@ return [
             'level' => 'info',
         ],
 
+        'notification_logs' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/notification_logs.log'),
+            'level' => 'info',
+        ],
+
 
         
     ],

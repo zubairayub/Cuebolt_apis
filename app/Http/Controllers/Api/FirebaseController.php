@@ -18,9 +18,7 @@ class FirebaseController extends Controller
 
     public function sendPushNotification(Request $request)
     {
-        // Log the incoming request data
-        Log::info('Sending push notification', $request->all());
-
+    
         // Validate the request
         $request->validate([
             'token' => 'required|string',
@@ -29,7 +27,7 @@ class FirebaseController extends Controller
             'data' => 'nullable|array',
         ]);
 
-        Log::info('Validation passed');
+       
 
         // Extract the input values
         $token = $request->input('token');
@@ -37,19 +35,23 @@ class FirebaseController extends Controller
         $body = $request->input('body');
         $data = $request->input('data');
 
-        // Log the extracted data
-        Log::info('Notification data', [
-            'token' => $token,
-            'title' => $title,
-            'body' => $body,
-            'data' => $data,
-        ]);
-
         try {
             // Assuming your service method is sending the notification
-           $data =  $this->firebaseServiceProvider->sendNotification($token, $title, $body, $data);
-            Log::info('Notification sent successfully');
-            
+            //$data =  $this->firebaseServiceProvider->sendNotification($token, $title, $body, $data);
+            $title = "Welcome to Cuebolt";
+            $body = "Test Notification";
+            $type = "Testing";
+            $data = [];
+
+            if ($token) {
+                send_push_notification($token, $title, $body, $data, $type );
+            }
+            // Return success response
+            return [
+                'status' => 'success',
+                'message' => 'Notification sent successfully'
+            ];
+
         } catch (\Exception $e) {
             // Log the error if something goes wrong
             Log::error('Error sending notification', [
@@ -59,7 +61,76 @@ class FirebaseController extends Controller
             return response()->json(['message' => 'Error sending notification', 'error' => $e->getMessage()], 500);
         }
 
-        // Return a success response
-        return response()->json(['message' => 'Notification Sent Successfully']);
+
     }
+
+
+    // {
+    //     $request->validate([
+    //         'user_id' => 'required|exists:users,id',
+    //         'title' => 'required|string',
+    //         'body' => 'required|string',
+    //     ]);
+
+    //     $user = \App\Models\User::find($request->user_id);
+    //     $fcm = $user->fcm_token;
+
+    //     if (!$fcm) {
+    //         return response()->json(['message' => 'User does not have a device token'], 400);
+    //     }
+
+    //     $title = $request->title;
+    //     $description = $request->body;
+    //     $projectId = config('services.fcm.project_id'); # INSERT COPIED PROJECT ID
+
+    //     $credentialsFilePath = Storage::path('app/json/file.json');
+    //     $client = new GoogleClient();
+    //     $client->setAuthConfig($credentialsFilePath);
+    //     $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+    //     $client->refreshTokenWithAssertion();
+    //     $token = $client->getAccessToken();
+
+    //     $access_token = $token['access_token'];
+
+    //     $headers = [
+    //         "Authorization: Bearer $access_token",
+    //         'Content-Type: application/json'
+    //     ];
+
+    //     $data = [
+    //         "message" => [
+    //             "token" => $fcm,
+    //             "notification" => [
+    //                 "title" => $title,
+    //                 "body" => $description,
+    //             ],
+    //         ]
+    //     ];
+    //     $payload = json_encode($data);
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send");
+    //     curl_setopt($ch, CURLOPT_POST, true);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    //     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    //     curl_setopt($ch, CURLOPT_VERBOSE, true); // Enable verbose output for debugging
+    //     $response = curl_exec($ch);
+    //     $err = curl_error($ch);
+    //     curl_close($ch);
+
+    //     if ($err) {
+    //         return response()->json([
+    //             'message' => 'Curl Error: ' . $err
+    //         ], 500);
+    //     } else {
+    //         return response()->json([
+    //             'message' => 'Notification has been sent',
+    //             'response' => json_decode($response, true)
+    //         ]);
+    //     }
+    // }
+
 }
+// public function sendFcmNotification(Request $request)
