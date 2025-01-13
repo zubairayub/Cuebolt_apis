@@ -47,7 +47,7 @@ class PackagesController extends Controller
             ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture', 'user_id', 'duration_id')
             ->withCount(['orders as active_orders' => function ($query) {
                 $query->where('expiry_date', '>', Carbon::now());
-            }]);
+            }])->orderBy('id', 'desc');
     
             // Apply filtering based on request parameters
             if ($request->has('package_id')) {
