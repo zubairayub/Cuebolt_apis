@@ -100,12 +100,12 @@ class FirebaseServiceProvider extends ServiceProvider
             Log::info('Preparing to write data', ['data' => $data]);
 
             // Validate data
-            foreach ($data as $key => $value) {
-                if (!is_string($value) && $value !== null) {
-                    Log::error("Invalid value for key '{$key}'", ['value' => $value]);
-                    throw new \InvalidArgumentException("Invalid value for key '{$key}'");
-                }
-            }
+            // foreach ($data as $key => $value) {
+            //     if (!is_string($value) && $value !== null) {
+            //         Log::error("Invalid value for key '{$key}'", ['value' => $value]);
+            //         throw new \InvalidArgumentException("Invalid value for key '{$key}'");
+            //     }
+            // }
 
             // Write to Firestore
             $result = $docRef->set($data);
