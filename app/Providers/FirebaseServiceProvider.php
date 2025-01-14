@@ -97,26 +97,22 @@ class FirebaseServiceProvider extends ServiceProvider
   
 
     public function addUserToFirestore($userId)
-{
-   
+    {
         // Dummy data to be written to Firestore
         $data = [
             'username' => 'John Doe',
-            
-            
         ];
-
-        $firestore = $this->firestore->database();
-        
-
-        $docRef = $firestore->collection('users')->document('user_123'); 
-        // Reference to the document in Firestore (replace with your collection/document path)
-        $docRef = $this->firestore->collection('users')->document('user_123');
-
+    
         try {
+            // Get Firestore database instance
+            $firestore = $this->firestore->database();
+    
+            // Reference to the 'users' collection and the specific document (userId)
+            $docRef = $firestore->collection('users')->document($userId);
+    
             // Log data before setting
             Log::info('Preparing to write data', ['data' => $data]);
-
+    
             // Validate data
             foreach ($data as $key => $value) {
                 if (!is_string($value) && $value !== '') {
@@ -124,15 +120,12 @@ class FirebaseServiceProvider extends ServiceProvider
                     throw new \InvalidArgumentException("Invalid value for key '{$key}'");
                 }
             }
-
-            
-           
-
+    
             // Write to Firestore
             $result = $docRef->set($data);
-
+    
             Log::info('Data successfully written to Firestore', [
-                'document_path' => $docRef->name(),
+                'document_path' => $docRef->path(), // `name()` was incorrect here; use `path()`
                 'data' => $data,
             ]);
         } catch (\Google\Cloud\Core\Exception\GoogleException $e) {
@@ -148,10 +141,8 @@ class FirebaseServiceProvider extends ServiceProvider
             ]);
             throw $e;
         }
+    }
     
-    
-    
-}
     
 
     public function register()
