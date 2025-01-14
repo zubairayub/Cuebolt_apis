@@ -7,23 +7,37 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Log;
-use Kreait\Firebase\Messaging\MessageTarget;
-use Kreait\Firebase\Messaging\MulticastMessage;
-use Kreait\Firebase\Messaging\MulticastSendReport;
-use Kreait\Firebase\Analytics;
+use Kreait\Firebase\Exception\AuthException;
+use Kreait\Firebase\Exception\FirebaseException;
+use Kreait\Firebase\Firestore;
+use Google\Cloud\Firestore\FirestoreClient;
+use Kreait\Firebase\Util\JSON;
+use Illuminate\Support\Facades\Firebase;
+use App\Models\User; // Import User model at the top
 
 class FirebaseServiceProvider extends ServiceProvider
 {
     protected $messaging;
+    protected $auth;
+    protected $firestore;
+    protected $factory;
 
     public function __construct()
     {
+        // Initialize Firebase Factory with the service account
+        $this->factory = (new Factory)->withServiceAccount(storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json'));
+        
+        $this->firestore = new FirestoreClient([
+            'keyFilePath' => storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json')
+        ]);
         // Initialize Firebase Messaging
-        $serviceAccountPath = storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json');
-        $factory = (new Factory)->withServiceAccount($serviceAccountPath);
-        $this->messaging = $factory->createMessaging();
-         // Initialize Firebase Analytics
-        //$this->analytics = $factory->createAnalytics();
+        $this->messaging = $this->factory->createMessaging();
+
+        // Initialize Firebase Auth
+       // $this->auth = $this->factory->createAuth();
+
+        // Initialize Firestore
+        $this->firestore = $this->factory->createFirestore(); // Firestore initialization
     }
 
     public function sendNotification(array $tokens, $title, $body, $data = [], $type)
@@ -40,7 +54,6 @@ class FirebaseServiceProvider extends ServiceProvider
                 // Send a multicast notification to the current chunk
                 $response = $this->messaging->sendMulticast($message, $chunk);
 
-
                 Log::channel('notification_logs')->info('Notification:', [
                     'Token' => $chunk,
                     'Title' => $title,
@@ -49,13 +62,6 @@ class FirebaseServiceProvider extends ServiceProvider
                     'SuccessCount' => $response->successes()->count(),
                     'FailureCount' => $response->failures()->count(),
                 ]);
-
-                // Track each success and failure
-                //$this->trackNotificationResponses($chunk, $response);
-
-                // Log the campaign in Firebase Analytics
-                //$this->logNotificationToFirebaseAnalytics($chunk, $title, $body, $type);
-
             } catch (\Kreait\Firebase\Exception\MessagingException $e) {
                 // Log the error for this chunk
                 Log::error('Error sending campaign notification', [
@@ -66,41 +72,91 @@ class FirebaseServiceProvider extends ServiceProvider
         }
     }
 
-
-    // private function logNotificationToFirebaseAnalytics($token, $title, $body, $type)
+    // public function createUser($email, $password, $displayName = null)
     // {
-    //     // Firebase Analytics event logging
     //     try {
-    //         // Log event to Firebase Analytics
-    //         $this->analytics->logEvent('notification_sent', [
-    //             'Token' => $token,
-    //             'Title' => $title,
-    //             'Body' => $body,
-    //             'Type' => $type,
-    //             'Timestamp' => now()->toDateTimeString(),
+    //         // Create a new user using Firebase Auth
+    //         $user = $this->auth->createUser([
+    //             'email' => $email,
+    //             'password' => $password,
+    //             'displayName' => $displayName,
     //         ]);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error logging to Firebase Analytics', [
-    //             'Error' => $e->getMessage(),
-    //         ]);
+
+    //         // Log success
+    //         Log::info('User created in Firebase', ['uid' => $user->uid, 'email' => $email]);
+
+    //         return $user;
+    //     } catch (AuthException $e) { // Catch Firebase Auth-specific exceptions
+    //         Log::error('Error creating user in Firebase', ['error' => $e->getMessage()]);
+    //         throw $e;
+    //     } catch (FirebaseException $e) { // Catch general Firebase exceptions
+    //         Log::error('General Firebase error', ['error' => $e->getMessage()]);
+    //         throw $e;
     //     }
     // }
 
-    // private function trackNotificationResponses(array $tokens, $response)
-    // {
-    //     foreach ($tokens as $index => $token) {
-    //         if ($response->hasSuccess($index)) {
-    //             Log::info("Notification delivered successfully", ['Token' => $token]);
-    //         } elseif ($response->hasFailure($index)) {
-    //             $failure = $response->failures()->get($index);
-    //             Log::error("Notification delivery failed", [
-    //                 'Token' => $token,
-    //                 'Error' => $failure->rawErrorMessage(),
-    //             ]);
-    //         }
-    //     }
-    // }
+  
 
+    public function addUserToFirestore($userId)
+{
+   
+        // Dummy data to be written to Firestore
+        $data = [
+            'username' => 'John Doe',
+           
+        ];
+
+        $groupsRef = app('firebase.firestore')->database()->collection('users');
+    $data = [
+        'name' => 'Jane Smith',
+        'age' => 30,
+    ];
+    $groupsRef->add($data);
+        // Reference to the document in Firestore (replace with your collection/document path)
+        //$docRef = $this->firestore->collection('users')->document('user_123');
+
+        try {
+            // Log data before setting
+            Log::info('Preparing to write data', ['data' => $data]);
+
+            // Validate data
+            foreach ($data as $key => $value) {
+                if (!is_string($value) && $value !== '') {
+                    Log::error("Invalid value for key '{$key}'", ['value' => $value]);
+                    throw new \InvalidArgumentException("Invalid value for key '{$key}'");
+                }
+            }
+
+            // Convert null to empty strings
+            $data = array_map(function($value) {
+                return is_null($value) ? '' : (string) $value;
+            }, $data);
+
+            // Write to Firestore
+            //$result = $docRef->set($data, ['merge' => true]);
+
+            Log::info('Data successfully written to Firestore', [
+                'document_path' => $docRef->name(),
+                'data' => $data,
+            ]);
+        } catch (\Google\Cloud\Core\Exception\GoogleException $e) {
+            Log::error('Firestore Google Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Generic Exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    
+    
+    
+}
+    
 
     public function register()
     {
