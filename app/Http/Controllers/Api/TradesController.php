@@ -239,12 +239,26 @@ class TradesController extends Controller
             $title = "{$ownerUsername} shared a new signal with trade details";
 
             // Step 7: Format the notification body for a user-friendly presentation
+            
             $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
             $body .= "📈 Market Pair: {$marketPairName}\n";
             $body .= "🔹 Trade Type: {$tradeTypeName}\n";
             $body .= "💰 Entry Price: {$validated['entry_price']}\n";
-            $body .= "📊 Take Profit: " . implode(' / ', $validated['take_profit']) . "\n"; // Show take profit as a range if multiple
+            $body .= "📊 Take Profit: ";
+
+            if ($takeProfit1 && $takeProfit2) {
+                // Show both take profit values
+                $body .= "{$takeProfit1} / {$takeProfit2}\n";
+            } elseif ($takeProfit1) {
+                // Show only the first take profit value if the second is not set
+                $body .= "{$takeProfit1}\n";
+            } else {
+                // Show the second take profit value if the first is not set
+                $body .= "{$takeProfit2}\n";
+            }
+
             $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
+
 
             // Step 8: Send notification if there are valid tokens
             if ($tokens->isNotEmpty()) {
