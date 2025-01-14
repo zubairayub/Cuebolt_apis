@@ -339,7 +339,7 @@ class PackagesController extends Controller
             $data = [];
 
             if ($token) {
-                send_push_notification($token, $title, $body, $data, $type );
+              //  send_push_notification($token, $title, $body, $data, $type );
             }
 
             // Call the createGroup API
