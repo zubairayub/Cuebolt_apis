@@ -12,7 +12,6 @@ use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Firestore;
 use Google\Cloud\Firestore\FirestoreClient;
 use Kreait\Firebase\Util\JSON;
-use Illuminate\Support\Facades\Firebase;
 use App\Models\User; // Import User model at the top
 
 class FirebaseServiceProvider extends ServiceProvider
@@ -106,12 +105,20 @@ class FirebaseServiceProvider extends ServiceProvider
            
         ];
 
-        $groupsRef = app('firebase.firestore')->database()->collection('users');
-    $data = [
-        'name' => 'Jane Smith',
-        'age' => 30,
-    ];
-    $groupsRef->add($data);
+    $firestore = $this->firestore->database();
+        
+
+      // $docRef = $firestore->collection('chatRooms')->documents(); 
+      $docRef = $firestore->collection('chatRooms')->limit(1)->documents();
+
+
+      //  $firestore = app('firebase.firestore');
+//$db = $firestore->database();
+//$doctorRef = $db->collection('chatRooms');
+
+//$data['users'] = $doctorRef->documents();
+dd($docRef);
+
         // Reference to the document in Firestore (replace with your collection/document path)
         //$docRef = $this->firestore->collection('users')->document('user_123');
 
