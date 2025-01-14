@@ -239,7 +239,7 @@ class TradesController extends Controller
     //         $title = "{$ownerUsername} shared a new signal with trade details";
 
     //         // Step 7: Format the notification body for a user-friendly presentation
-
+            
     //         $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
     //         $body .= "📈 Market Pair: {$marketPairName}\n";
     //         $body .= "🔹 Trade Type: {$tradeTypeName}\n";
@@ -293,141 +293,137 @@ class TradesController extends Controller
     // }
 
     public function store(Request $request): JsonResponse
-    {
-        // Step 1: Validation
-        try {
-            $validated = $request->validate([
-                'trade_name' => 'required|string|max:255',
-                'package_id' => 'required|exists:packages,id',
-                'market_pair_id' => 'required|exists:market_pairs,id',
-                'trade_type_id' => 'required|exists:trade_types,id',
-                'trade_date' => 'required|date',
-                'entry_price' => 'required|numeric',
-                'take_profit' => 'required|array|min:1|max:2',
-                'take_profit.*' => 'required|numeric',
-                'stop_loss' => 'required|numeric',
-                'time_frame' => 'required|string',
-                'validity' => 'required|string',
-                'status' => 'required|boolean',
-                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed during trade creation:', $e->errors());
-            return response()->json(['errors' => $e->errors()], 422);
-        }
+{
+    // Step 1: Validation
+    try {
+        // Validate the request input
+        $validated = $request->validate([
+            'trade_name' => 'required|string|max:255',
+            'package_id' => 'required|exists:packages,id',
+            'market_pair_id' => 'required|exists:market_pairs,id',
+            'trade_type_id' => 'required|exists:trade_types,id',
+            'trade_date' => 'required|date',
+            'entry_price' => 'required|numeric',
+            'take_profit' => 'required|array|min:1|max:2', // Ensure it's an array with 1-2 elements
+            'take_profit.*' => 'required|numeric', // Ensure each array element is numeric
+            'stop_loss' => 'required|numeric',
+            'time_frame' => 'required|string',
+            'validity' => 'required|string',
+            'status' => 'required|boolean',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Image validation
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('Validation failed during trade creation:', $e->errors());
+        return response()->json(['errors' => $e->errors()], 422);
+    }
 
-        // Step 2: Authorization check
-        try {
-            $package = Package::findOrFail($validated['package_id']);
-            if ($package->user_id !== auth()->id()) {
-                Log::warning('Unauthorized access attempt during trade creation.', [
-                    'user_id' => auth()->id(),
-                    'package_owner_id' => $package->user_id,
+    // Step 2: Authorization check
+    try {
+        $package = Package::findOrFail($validated['package_id']);
+        if ($package->user_id !== auth()->id()) {
+            Log::warning('Unauthorized access attempt during trade creation.', [
+                'user_id' => auth()->id(),
+                'package_owner_id' => $package->user_id,
+            ]);
+            return response()->json(['error' => 'Unauthorized to create trade for this package'], 403);
+        }
+    } catch (Exception $e) {
+        Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
+        return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
+    }
+
+    // Step 3: Create the trade
+    try {
+        // Prepare data for trade creation
+        $takeProfit1 = $validated['take_profit'][0] ?? null;
+        $takeProfit2 = $validated['take_profit'][1] ?? null;
+
+        $tradeData = array_merge($validated, [
+            'take_profit' => $takeProfit1,
+            'take_profit_2' => $takeProfit2,
+        ]);
+
+        // Create the trade using the validated data
+        $trade = Trade::create($tradeData);
+
+        // Step 4: Save Images (if any)
+        if ($request->hasFile('images')) {
+            $userId = auth()->id(); // Get the authenticated user's ID
+
+            // Define the folder path
+            $basePath = "uploads/users/{$userId}/trades";
+
+            // Ensure the directory exists
+            if (!Storage::exists($basePath)) {
+                Storage::makeDirectory($basePath); // Creates the directory if it doesn't exist
+            }
+
+            foreach ($request->file('images') as $image) {
+                // Store the file in the user's trades folder
+                $filePath = $image->store($basePath, 'public');
+
+                // Optional: Save image details in the database
+                $trade->images()->create([
+                    'image_path' => $filePath,
+                    'image_name' => $image->getClientOriginalName(),
                 ]);
-                return response()->json(['error' => 'Unauthorized to create trade for this package'], 403);
             }
-        } catch (Exception $e) {
-            Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
-            return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
+        } else {
+            Log::info('Trade Created without images.', ['trade_id' => $trade->id]);
         }
 
-        // Step 3: Create the trade
-        try {
-            $takeProfit1 = $validated['take_profit'][0] ?? null;
-            $takeProfit2 = $validated['take_profit'][1] ?? null;
+        // Step 5: Send Push Notifications
+        $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
+            ->where('order_status_id', 2) // Only orders with status 2
+            ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
+            ->pluck('user_id'))
+            ->whereNotNull('fcm_token')
+            ->pluck('fcm_token'); // Get all the FCM tokens
 
-            // Prepare data for trade creation
-            $tradeData = array_merge($validated, [
-                'take_profit' => $takeProfit1,
-                'take_profit_2' => $takeProfit2,
-            ]);
-
-            // Create the trade
-            $trade = Trade::create($tradeData);
-
-            // Step 4: Save Images (if any)
-            if ($request->hasFile('images')) {
-                $userId = auth()->id(); // Get the authenticated user's ID
-                $basePath = "uploads/users/{$userId}/trades";
-
-                // Ensure the directory exists
-                if (!Storage::exists($basePath)) {
-                    Storage::makeDirectory($basePath);
-                }
-
-                foreach ($request->file('images') as $image) {
-                    // Store the file in the user's trades folder
-                    $filePath = $image->store($basePath, 'public');
-
-                    // Save image details in the database
-                    $trade->images()->create([
-                        'image_path' => $filePath,
-                        'image_name' => $image->getClientOriginalName(),
-                    ]);
-                }
-            }
-
-            // Notification section
-            $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
-                ->where('order_status_id', 2)
-                ->where('expiry_date', '>=', now())
-                ->pluck('user_id'))
-                ->whereNotNull('fcm_token')
-                ->pluck('fcm_token');
-
-            // Prepare package details
-            $packageName = $package->name ?? 'Unknown Package';
-            $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
+        if ($tokens->isNotEmpty()) {
+            // Prepare the notification body
+            $package = Package::find($validated['package_id']);
             $marketPair = MarketPair::find($validated['market_pair_id']);
-            $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
             $tradeType = TradeType::find($validated['trade_type_id']);
+            $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
+            $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
             $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
 
-            // Prepare notification title and body
             $title = "{$ownerUsername} shared a new signal with trade details";
-            $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
+
+            // Prepare the trade details for the notification
+            $body = "A new trade has been created for the package '{$package->name}'.\n\n";
             $body .= "📈 Market Pair: {$marketPairName}\n";
             $body .= "🔹 Trade Type: {$tradeTypeName}\n";
             $body .= "💰 Entry Price: {$validated['entry_price']}\n";
-            $body .= "📊 Take Profit: ";
-
-            // Handle Take Profit display
-            $takeProfitValues = [];
-            if (isset($takeProfit1))
-                $takeProfitValues[] = $takeProfit1;
-            if (isset($takeProfit2))
-                $takeProfitValues[] = $takeProfit2;
-
-            $body .= implode(' / ', $takeProfitValues) . "\n"; // Concatenate both take profits if available
+            $body .= "📊 Take Profit: " . implode(" / ", $validated['take_profit']) . "\n"; // Use implode to join array values
             $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
 
-            // Step 8: Send notification if there are valid tokens
-            if ($tokens->isNotEmpty()) {
-                send_push_notification(
-                    $tokens->toArray(),
-                    $title,
-                    $body,
-                    [
-                        'trade_id' => $trade->id,
-                        'package_id' => $validated['package_id'],
-                        'market_pair_id' => $validated['market_pair_id'],
-                        'trade_type_id' => $validated['trade_type_id'],
-                        'entry_price' => $validated['entry_price'],
-                        'take_profit' => $validated['take_profit'],
-                        'stop_loss' => $validated['stop_loss'],
-                        'type' => 'trade_notification'
-                    ],
-                    'trade_notification'
-                );
-            }
-
-            Log::info('Trade created successfully with images.', ['trade_id' => $trade->id]);
-            return response()->json($trade->load('images'), 201);
-        } catch (Exception $e) {
-            Log::error('Trade creation failed:', ['message' => $e->getMessage()]);
-            return response()->json(['error' => 'Failed to create trade', 'message' => $e->getMessage()], 500);
+            send_push_notification(
+                $tokens->toArray(),
+                $title,
+                $body,
+                [
+                    'trade_id' => $trade->id,
+                    'package_id' => $validated['package_id'],
+                    'market_pair_id' => $validated['market_pair_id'],
+                    'trade_type_id' => $validated['trade_type_id'],
+                    'entry_price' => $validated['entry_price'],
+                    'take_profit' => $validated['take_profit'],
+                    'stop_loss' => $validated['stop_loss'],
+                    'type' => 'trade_notification'
+                ],
+                'trade_notification'
+            );
         }
+
+        Log::info('Trade created successfully with images.', ['trade_id' => $trade->id]);
+        return response()->json($trade->load('images'), 201); // Include images in the response
+    } catch (Exception $e) {
+        Log::error('Trade creation failed:', ['message' => $e->getMessage()]);
+        return response()->json(['error' => 'Failed to create trade', 'message' => $e->getMessage()], 500);
     }
+}
 
 
 
