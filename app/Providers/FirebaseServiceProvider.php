@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
@@ -13,6 +12,7 @@ use Kreait\Firebase\Firestore;
 use Google\Cloud\Firestore\FirestoreClient;
 use Kreait\Firebase\Util\JSON;
 use App\Models\User; // Import User model at the top
+use App\Models\UserProfile; // Import UserProfile model to get profile data
 
 class FirebaseServiceProvider extends ServiceProvider
 {
@@ -26,14 +26,12 @@ class FirebaseServiceProvider extends ServiceProvider
         // Initialize Firebase Factory with the service account
         $this->factory = (new Factory)->withServiceAccount(storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json'));
         
-        $this->firestore = new FirestoreClient([
-            'keyFilePath' => storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json')
+        $this->firestore = new FirestoreClient([ 
+            'keyFilePath' => storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json') 
         ]);
+        
         // Initialize Firebase Messaging
         $this->messaging = $this->factory->createMessaging();
-
-        // Initialize Firebase Auth
-       // $this->auth = $this->factory->createAuth();
 
         // Initialize Firestore
         $this->firestore = $this->factory->createFirestore(); // Firestore initialization
@@ -53,7 +51,7 @@ class FirebaseServiceProvider extends ServiceProvider
                 // Send a multicast notification to the current chunk
                 $response = $this->messaging->sendMulticast($message, $chunk);
 
-                Log::channel('notification_logs')->info('Notification:', [
+                Log::channel('notification_logs')->info('Notification sent successfully', [
                     'Token' => $chunk,
                     'Title' => $title,
                     'Body' => $body,
@@ -63,7 +61,7 @@ class FirebaseServiceProvider extends ServiceProvider
                 ]);
             } catch (\Kreait\Firebase\Exception\MessagingException $e) {
                 // Log the error for this chunk
-                Log::error('Error sending campaign notification', [
+                Log::error('Error sending notification', [
                     'Tokens' => $chunk,
                     'Error' => $e->getMessage(),
                 ]);
@@ -71,61 +69,49 @@ class FirebaseServiceProvider extends ServiceProvider
         }
     }
 
-    // public function createUser($email, $password, $displayName = null)
-    // {
-    //     try {
-    //         // Create a new user using Firebase Auth
-    //         $user = $this->auth->createUser([
-    //             'email' => $email,
-    //             'password' => $password,
-    //             'displayName' => $displayName,
-    //         ]);
-
-    //         // Log success
-    //         Log::info('User created in Firebase', ['uid' => $user->uid, 'email' => $email]);
-
-    //         return $user;
-    //     } catch (AuthException $e) { // Catch Firebase Auth-specific exceptions
-    //         Log::error('Error creating user in Firebase', ['error' => $e->getMessage()]);
-    //         throw $e;
-    //     } catch (FirebaseException $e) { // Catch general Firebase exceptions
-    //         Log::error('General Firebase error', ['error' => $e->getMessage()]);
-    //         throw $e;
-    //     }
-    // }
-
-  
-
     public function addUserToFirestore($userId)
     {
-        // Dummy data to be written to Firestore
-        $data = [
-            'username' => 'John Doe',
-        ];
-    
         try {
+            // Retrieve user data from the User model (UserProfile model if needed)
+            $user = User::with('profile')->find($userId); // Assuming `profile` is a relation to user_profiles
+
+            if (!$user) {
+                Log::error('User not found', ['user_id' => $userId]);
+                throw new \Exception("User not found");
+            }
+
+            $userProfile = $user->profile; // Fetch user profile (ensure `profile` relation exists)
+            
+            // Prepare data to write to Firestore
+            $data = [
+                'username' => $user->username,
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'profile_picture_url' => $userProfile ? $userProfile->profile_picture_url : null,
+            ];
+
             // Get Firestore database instance
             $firestore = $this->firestore->database();
-    
+            
             // Reference to the 'users' collection and the specific document (userId)
             $docRef = $firestore->collection('users')->document($userId);
-    
+
             // Log data before setting
             Log::info('Preparing to write data', ['data' => $data]);
-    
+
             // Validate data
             foreach ($data as $key => $value) {
-                if (!is_string($value) && $value !== '') {
+                if (!is_string($value) && $value !== null) {
                     Log::error("Invalid value for key '{$key}'", ['value' => $value]);
                     throw new \InvalidArgumentException("Invalid value for key '{$key}'");
                 }
             }
-    
+
             // Write to Firestore
             $result = $docRef->set($data);
-    
+
             Log::info('Data successfully written to Firestore', [
-                'document_path' => $docRef->path(), // `name()` was incorrect here; use `path()`
+                'document_path' => $docRef->path(), // `path()` is correct here
                 'data' => $data,
             ]);
         } catch (\Google\Cloud\Core\Exception\GoogleException $e) {
@@ -142,8 +128,6 @@ class FirebaseServiceProvider extends ServiceProvider
             throw $e;
         }
     }
-    
-    
 
     public function register()
     {
