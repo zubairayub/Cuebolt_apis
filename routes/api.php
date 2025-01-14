@@ -279,7 +279,7 @@ Route::post('/forgot-password', [ApiController::class, 'forgotPassword']);
 Route::post('/reset-password', [ApiController::class, 'resetPassword']);
 
 
-Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+//Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
 
 
 

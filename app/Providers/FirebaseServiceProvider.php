@@ -5,8 +5,12 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Messaging;
+use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Log;
+use Kreait\Firebase\Messaging\MessageTarget;
+use Kreait\Firebase\Messaging\MulticastMessage;
+use Kreait\Firebase\Messaging\MulticastSendReport;
+
 class FirebaseServiceProvider extends ServiceProvider
 {
     protected $messaging;
@@ -19,40 +23,91 @@ class FirebaseServiceProvider extends ServiceProvider
         $this->messaging = $factory->createMessaging();
     }
 
-    public function sendNotification($token, $title, $body, $data = [], $type)
+    public function sendNotification(array $tokens, $title, $body, $data = [], $type)
     {
-        // Build the message
-        $message = CloudMessage::withTarget('token', $token)
-            ->withNotification(['title' => $title, 'body' => $body])
-            ->withData($data);
+        // Split tokens into chunks of 500
+        $tokenChunks = array_chunk($tokens, 500);
 
-        try {
-            // Send the message
-            $this->messaging->send($message);
+        foreach ($tokenChunks as $chunk) {
+            $message = CloudMessage::new()
+                ->withNotification(Notification::create($title, $body))
+                ->withData($data);
 
-            Log::channel('notification_logs')->info('Firebase response:', [
-                'Token' => $token,
-                'Type' => $type,
-            ]);
+            try {
+                // Send a multicast notification to the current chunk
+                $response = $this->messaging->sendMulticast($message, $chunk);
 
+                // Log the notification details
+                Log::info('Campaign Notification Sent', [
+                    'Tokens' => $chunk,
+                    'Title' => $title,
+                    'Body' => $body,
+                    'Data' => $data,
+                    'Type' => $type,
+                    'SuccessCount' => $response->successes()->count(),
+                    'FailureCount' => $response->failures()->count(),
+                ]);
 
-        } catch (\Kreait\Firebase\Exception\MessagingException $e) {
-            // Handle Firebase messaging exception
-            return response()->json([
-                'message' => 'Error sending notification',
-                'error' => $e->getMessage()
-            ], 500);
+                // Track each success and failure
+                //$this->trackNotificationResponses($chunk, $response);
+
+                // Log the campaign in Firebase Analytics
+                $this->logNotificationToFirebaseAnalytics($chunk, $title, $body, $type);
+
+            } catch (\Kreait\Firebase\Exception\MessagingException $e) {
+                // Log the error for this chunk
+                Log::error('Error sending campaign notification', [
+                    'Tokens' => $chunk,
+                    'Error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
 
+    private function logNotificationToFirebaseAnalytics($token, $title, $body, $type)
+    {
+        // Firebase Analytics event logging
+        try {
+            $analytics = app('firebase.analytics');
+
+            $analytics->logEvent('notification_sent', [
+                'Token' => $token,
+                'Title' => $title,
+                'Body' => $body,
+                'Type' => $type,
+                'Timestamp' => now()->toDateTimeString(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error logging to Firebase Analytics', [
+                'Error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    // private function trackNotificationResponses(array $tokens, $response)
+    // {
+    //     foreach ($tokens as $index => $token) {
+    //         if ($response->hasSuccess($index)) {
+    //             Log::info("Notification delivered successfully", ['Token' => $token]);
+    //         } elseif ($response->hasFailure($index)) {
+    //             $failure = $response->failures()->get($index);
+    //             Log::error("Notification delivery failed", [
+    //                 'Token' => $token,
+    //                 'Error' => $failure->rawErrorMessage(),
+    //             ]);
+    //         }
+    //     }
+    // }
+
+
     public function register()
     {
-        // No need to register manually
+        // Registration logic if needed
     }
 
     public function boot()
     {
-        //
+        // Boot logic if needed
     }
 }
