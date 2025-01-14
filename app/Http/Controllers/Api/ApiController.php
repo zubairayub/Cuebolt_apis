@@ -353,7 +353,7 @@ class ApiController extends Controller
         $data = [];
 
         if ($token) {
-            send_push_notification($token, $title, $body, $data, $type );
+            send_push_notification([$token], $title, $body, $data, $type );
         }
 
         // Check if the user exists and password matches

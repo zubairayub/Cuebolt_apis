@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Trade;
+use App\Models\User;
+use App\Models\Order;
 use App\Models\Package;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\TradeJournal;
 use App\Models\Emotion;
+use Illuminate\Support\Facades\Log;
 
 
 class TradesController extends Controller
@@ -82,11 +85,11 @@ class TradesController extends Controller
     //     } catch (\Illuminate\Validation\ValidationException $e) {
     //         // Log validation errors
     //         \Log::error('Validation failed during trade creation:', $e->errors());
-    
+
     //         // Return validation errors to the client
     //         return response()->json(['errors' => $e->errors()], 422);
     //     }
-    
+
     //     // Step 2: Authorization check
     //     try {
     //         // Check if the package belongs to the authenticated user
@@ -102,7 +105,7 @@ class TradesController extends Controller
     //         \Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
     //         return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
     //     }
-    
+
     //     // Step 3: Create the trade
     //     try {
     //         $takeProfit1 = $validated['take_profit'][0] ?? null; // First element or null
@@ -114,7 +117,7 @@ class TradesController extends Controller
     //         ]);
     //         // Create the trade using the validated data
     //         $trade = Trade::create($tradeData);
-    
+
     //         \Log::info('Trade created successfully.', ['trade_id' => $trade->id]);
     //         return response()->json($trade, 201); // HTTP Status 201: Created
     //     } catch (Exception $e) {
@@ -125,97 +128,126 @@ class TradesController extends Controller
     // }
 
     public function store(Request $request): JsonResponse
-{
-    // Step 1: Validation
-    try {
-        // Validate the request input
-        $validated = $request->validate([
-            'trade_name' => 'required|string|max:255',
-            'package_id' => 'required|exists:packages,id',
-            'market_pair_id' => 'required|exists:market_pairs,id',
-            'trade_type_id' => 'required|exists:trade_types,id',
-            'trade_date' => 'required|date',
-            'entry_price' => 'required|numeric',
-            'take_profit' => 'required|array|min:1|max:2', // Ensure it's an array with 1-2 elements
-            'take_profit.*' => 'required|numeric', // Ensure each array element is numeric
-            'stop_loss' => 'required|numeric',
-            'time_frame' => 'required|string',
-            'validity' => 'required|string',
-            'status' => 'required|boolean',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Image validation
-        ]);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        \Log::error('Validation failed during trade creation:', $e->errors());
-        return response()->json(['errors' => $e->errors()], 422);
-    }
-
-    // Step 2: Authorization check
-    try {
-        $package = Package::findOrFail($validated['package_id']);
-        if ($package->user_id !== auth()->id()) {
-            \Log::warning('Unauthorized access attempt during trade creation.', [
-                'user_id' => auth()->id(),
-                'package_owner_id' => $package->user_id,
+    {
+        // Step 1: Validation
+        try {
+            // Validate the request input
+            $validated = $request->validate([
+                'trade_name' => 'required|string|max:255',
+                'package_id' => 'required|exists:packages,id',
+                'market_pair_id' => 'required|exists:market_pairs,id',
+                'trade_type_id' => 'required|exists:trade_types,id',
+                'trade_date' => 'required|date',
+                'entry_price' => 'required|numeric',
+                'take_profit' => 'required|array|min:1|max:2', // Ensure it's an array with 1-2 elements
+                'take_profit.*' => 'required|numeric', // Ensure each array element is numeric
+                'stop_loss' => 'required|numeric',
+                'time_frame' => 'required|string',
+                'validity' => 'required|string',
+                'status' => 'required|boolean',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Image validation
             ]);
-            return response()->json(['error' => 'Unauthorized to create trade for this package'], 403);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed during trade creation:', $e->errors());
+            return response()->json(['errors' => $e->errors()], 422);
         }
-    } catch (Exception $e) {
-        \Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
-        return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
-    }
 
-    // Step 3: Create the trade
-    try {
-        $takeProfit1 = $validated['take_profit'][0] ?? null;
-        $takeProfit2 = $validated['take_profit'][1] ?? null;
-
-        // Prepare data for trade creation
-        $tradeData = array_merge($validated, [
-            'take_profit' => $takeProfit1,
-            'take_profit_2' => $takeProfit2,
-        ]);
-
-        // Create the trade using the validated data
-        $trade = Trade::create($tradeData);
-
-        // Step 4: Save Images (if any)
-        if ($request->hasFile('images')) {
-            $userId = auth()->id(); // Get the authenticated user's ID
-        
-            // Define the folder path
-            $basePath = "uploads/users/{$userId}/trades";
-        
-            // Ensure the directory exists
-            if (!Storage::exists($basePath)) {
-                Storage::makeDirectory($basePath); // Creates the directory if it doesn't exist
-            }
-        
-            foreach ($request->file('images') as $image) {
-                // Store the file in the user's trades folder
-                $filePath = $image->store($basePath, 'public');
-        
-                // Optional: Save image details in the database
-                $trade->images()->create([
-                    'image_path' => $filePath,
-                    'image_name' => $image->getClientOriginalName(),
+        // Step 2: Authorization check
+        try {
+            $package = Package::findOrFail($validated['package_id']);
+            if ($package->user_id !== auth()->id()) {
+                Log::warning('Unauthorized access attempt during trade creation.', [
+                    'user_id' => auth()->id(),
+                    'package_owner_id' => $package->user_id,
                 ]);
+                return response()->json(['error' => 'Unauthorized to create trade for this package'], 403);
             }
-        
-           // return response()->json(['message' => 'Images uploaded successfully.'], 201);
-        } else {
-            \Log::info('Trade Created without images.', ['trade_id' => $trade->id]);
+        } catch (Exception $e) {
+            Log::error('Error during authorization check:', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
         }
-        
 
-        \Log::info('Trade created successfully with images.', ['trade_id' => $trade->id]);
-        return response()->json($trade->load('images'), 201); // Include images in the response
-    } catch (Exception $e) {
-        \Log::error('Trade creation failed:', ['message' => $e->getMessage()]);
-        return response()->json(['error' => 'Failed to create trade', 'message' => $e->getMessage()], 500);
+        // Step 3: Create the trade
+        try {
+            $takeProfit1 = $validated['take_profit'][0] ?? null;
+            $takeProfit2 = $validated['take_profit'][1] ?? null;
+
+            // Prepare data for trade creation
+            $tradeData = array_merge($validated, [
+                'take_profit' => $takeProfit1,
+                'take_profit_2' => $takeProfit2,
+            ]);
+
+            // Create the trade using the validated data
+            $trade = Trade::create($tradeData);
+
+            // Step 4: Save Images (if any)
+            if ($request->hasFile('images')) {
+                $userId = auth()->id(); // Get the authenticated user's ID
+
+                // Define the folder path
+                $basePath = "uploads/users/{$userId}/trades";
+
+                // Ensure the directory exists
+                if (!Storage::exists($basePath)) {
+                    Storage::makeDirectory($basePath); // Creates the directory if it doesn't exist
+                }
+
+                foreach ($request->file('images') as $image) {
+                    // Store the file in the user's trades folder
+                    $filePath = $image->store($basePath, 'public');
+
+                    // Optional: Save image details in the database
+                    $trade->images()->create([
+                        'image_path' => $filePath,
+                        'image_name' => $image->getClientOriginalName(),
+                    ]);
+                }
+
+                // return response()->json(['message' => 'Images uploaded successfully.'], 201);
+            } else {
+                Log::info('Trade Created without images.', ['trade_id' => $trade->id]);
+            }
+
+            //notification
+            // Step 1: Get FCM tokens for users who ordered this package with valid expiry and status
+            $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
+                ->where('order_status_id', 2) // Only orders with status 2
+                ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
+                ->pluck('user_id'))
+                ->whereNotNull('fcm_token')
+                ->pluck('fcm_token'); // Get all the FCM tokens
+
+            // Step 2: Get package name from the packages table
+            $packageName = Package::find($validated['package_id'])->name ?? 'Unknown Package';
+
+            // Step 3: Send notification if there are valid tokens
+            if ($tokens->isNotEmpty()) {
+                send_push_notification(
+                    $tokens->toArray(),
+                    "New Trade Created",
+                    "A new trade has been created for the package '{$packageName}' you ordered!",
+                    [
+                        'trade_id' => $trade->id,
+                        'package_id' => $validated['package_id'],
+                        'type' => 'trade_notification'
+                    ],
+                    'trade_notification'
+                );
+            }
+
+            //end notification
+
+
+            Log::info('Trade created successfully with images.', ['trade_id' => $trade->id]);
+            return response()->json($trade->load('images'), 201); // Include images in the response
+        } catch (Exception $e) {
+            Log::error('Trade creation failed:', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to create trade', 'message' => $e->getMessage()], 500);
+        }
     }
-}
 
-    
+
 
     /**
      * Display the specified trade.
@@ -239,8 +271,8 @@ class TradesController extends Controller
         }
     }
 
-   
-//     public function update(Request $request, Trade $trade): JsonResponse
+
+    //     public function update(Request $request, Trade $trade): JsonResponse
 // {
 //     // Step 1: Validation
 //     try {
@@ -261,11 +293,11 @@ class TradesController extends Controller
 //         // Log validation errors
 //         \Log::error('Validation failed during trade update:', $e->errors());
 
-//         // Return validation errors to the client
+    //         // Return validation errors to the client
 //         return response()->json(['errors' => $e->errors()], 422);
 //     }
 
-//     // Step 2: Authorization check
+    //     // Step 2: Authorization check
 //     try {
 //         // Check if the authenticated user owns the package linked to the trade
 //         if ($trade->package->user_id !== auth()->id()) {
@@ -281,12 +313,12 @@ class TradesController extends Controller
 //         return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
 //     }
 
-//     // Step 3: Update the trade
+    //     // Step 3: Update the trade
 //     try {
 //         // Update the trade with the validated data
 //         $updated = $trade->update($validated);
 
-//         // Check if the update was successful
+    //         // Check if the update was successful
 //         if ($updated) {
 //             \Log::info('Trade updated successfully.', ['trade_id' => $trade->id]);
 //             return response()->json($trade, 200); // HTTP Status 200: Updated successfully
@@ -302,10 +334,10 @@ class TradesController extends Controller
 // }
 
 
-// public function update(Request $request, Trade $trade): JsonResponse
+    // public function update(Request $request, Trade $trade): JsonResponse
 // {
-    
-//     // Step 1: Validation
+
+    //     // Step 1: Validation
 //     try {
 //         // Validate the request input
 //         $validated = $request->validate([
@@ -325,11 +357,11 @@ class TradesController extends Controller
 //         // Log validation errors
 //         \Log::error('Validation failed during trade update:', $e->errors());
 
-//         // Return validation errors to the client
+    //         // Return validation errors to the client
 //         return response()->json(['errors' => $e->errors()], 422);
 //     }
 
-//     // Step 2: Authorization check
+    //     // Step 2: Authorization check
 //     try {
 //         // Check if the authenticated user owns the package linked to the trade
 //         if ($trade->package->user_id !== auth()->id()) {
@@ -345,22 +377,22 @@ class TradesController extends Controller
 //         return response()->json(['error' => 'Authorization check failed', 'message' => $e->getMessage()], 500);
 //     }
 
-//     // Step 3: Update the trade
+    //     // Step 3: Update the trade
 //     try {
 //         // Separate take_profit values
 //         $takeProfit1 = $validated['take_profit'][0] ?? null; // First element or null
 //         $takeProfit2 = $validated['take_profit'][1] ?? null; // Second element or null
 
-//         // Prepare data for updating the trade
+    //         // Prepare data for updating the trade
 //         $tradeData = array_merge($validated, [
 //             'take_profit' => $takeProfit1,
 //             'take_profit_2' => $takeProfit2,
 //         ]);
 
-//         // Update the trade with the validated data
+    //         // Update the trade with the validated data
 //         $updated = $trade->update($tradeData);
 
-//         // Check if the update was successful
+    //         // Check if the update was successful
 //         if ($updated) {
 //             \Log::info('Trade updated successfully.', ['trade_id' => $trade->id]);
 //             return response()->json($trade, 200); // HTTP Status 200: Updated successfully
@@ -376,91 +408,91 @@ class TradesController extends Controller
 // }
 
 
-public function update(Request $request, Trade $trade): JsonResponse
-{
-    try {
-        // Log the request data for debugging
-        \Log::info('Request Data:', $request->all());
+    public function update(Request $request, Trade $trade): JsonResponse
+    {
+        try {
+            // Log the request data for debugging
+            Log::info('Request Data:', $request->all());
 
-        // Validate the request
-        $validated = $request->validate([
-            'trade_name' => 'required|string|max:255',
-            'market_pair_id' => 'required|exists:market_pairs,id',
-            'trade_type_id' => 'required|exists:trade_types,id',
-            'trade_date' => 'required|date',
-            'entry_price' => 'required|numeric',
-            'take_profit' => 'required|array|min:1|max:2',
-            'take_profit.*' => 'required|numeric',
-            'stop_loss' => 'required|numeric',
-            'time_frame' => 'required|string',
-            'validity' => 'required|string',
-            'status' => 'required|boolean',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-    
-
-        
-
-        // Access take_profit values
-        $takeProfit1 = $validated['take_profit'][0] ?? null;
-        $takeProfit2 = $validated['take_profit'][1] ?? null;
-
-        // Step 2: Authorization check
-        if ($trade->package->user_id !== auth()->id()) {
-            \Log::warning('Unauthorized access attempt during trade update.', [
-                'user_id' => auth()->id(),
-                'package_owner_id' => $trade->package->user_id,
-                'trade_id' => $trade->id
+            // Validate the request
+            $validated = $request->validate([
+                'trade_name' => 'required|string|max:255',
+                'market_pair_id' => 'required|exists:market_pairs,id',
+                'trade_type_id' => 'required|exists:trade_types,id',
+                'trade_date' => 'required|date',
+                'entry_price' => 'required|numeric',
+                'take_profit' => 'required|array|min:1|max:2',
+                'take_profit.*' => 'required|numeric',
+                'stop_loss' => 'required|numeric',
+                'time_frame' => 'required|string',
+                'validity' => 'required|string',
+                'status' => 'required|boolean',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
-            return response()->json(['error' => 'Unauthorized access'], 403);
-        }
 
-        // Step 3: Update the trade
-        $tradeData = array_merge($validated, [
-            'take_profit' => $takeProfit1,
-            'take_profit_2' => $takeProfit2,
-        ]);
 
-        $trade->update($tradeData);
 
-        // Step 4: Handle trade images
-        if ($request->hasFile('images')) {
-            $userId = auth()->id();
-            $userFolder = "uploads/users/{$userId}/trades";
 
-            // Ensure the directory exists
-            if (!Storage::exists($userFolder)) {
-                Storage::makeDirectory($userFolder);
-            }
 
-            // Delete old images from storage and database
-            foreach ($trade->images as $oldImage) {
-                if (Storage::exists('public/' . $oldImage->image_path)) {
-                    Storage::delete('public/' . $oldImage->image_path);
-                }
-                $oldImage->delete();
-            }
+            // Access take_profit values
+            $takeProfit1 = $validated['take_profit'][0] ?? null;
+            $takeProfit2 = $validated['take_profit'][1] ?? null;
 
-            // Save new images
-            foreach ($request->file('images') as $image) {
-                $path = $image->store($userFolder, 'public');
-
-                // Save image details in the database
-                $trade->images()->create([
-                    'image_path' => $path,
-                    'image_name' => $image->getClientOriginalName(),
+            // Step 2: Authorization check
+            if ($trade->package->user_id !== auth()->id()) {
+                Log::warning('Unauthorized access attempt during trade update.', [
+                    'user_id' => auth()->id(),
+                    'package_owner_id' => $trade->package->user_id,
+                    'trade_id' => $trade->id
                 ]);
+                return response()->json(['error' => 'Unauthorized access'], 403);
             }
-        }
 
-        \Log::info('Trade updated successfully with images.', ['trade_id' => $trade->id]);
-        return response()->json($trade->load('images'), 200);
-    } catch (Exception $e) {
-        \Log::error('Trade update failed:', ['message' => $e->getMessage(), 'trade_id' => $trade->id]);
-        return response()->json(['error' => 'Failed to update trade', 'message' => $e->getMessage()], 500);
+            // Step 3: Update the trade
+            $tradeData = array_merge($validated, [
+                'take_profit' => $takeProfit1,
+                'take_profit_2' => $takeProfit2,
+            ]);
+
+            $trade->update($tradeData);
+
+            // Step 4: Handle trade images
+            if ($request->hasFile('images')) {
+                $userId = auth()->id();
+                $userFolder = "uploads/users/{$userId}/trades";
+
+                // Ensure the directory exists
+                if (!Storage::exists($userFolder)) {
+                    Storage::makeDirectory($userFolder);
+                }
+
+                // Delete old images from storage and database
+                foreach ($trade->images as $oldImage) {
+                    if (Storage::exists('public/' . $oldImage->image_path)) {
+                        Storage::delete('public/' . $oldImage->image_path);
+                    }
+                    $oldImage->delete();
+                }
+
+                // Save new images
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store($userFolder, 'public');
+
+                    // Save image details in the database
+                    $trade->images()->create([
+                        'image_path' => $path,
+                        'image_name' => $image->getClientOriginalName(),
+                    ]);
+                }
+            }
+
+            Log::info('Trade updated successfully with images.', ['trade_id' => $trade->id]);
+            return response()->json($trade->load('images'), 200);
+        } catch (Exception $e) {
+            Log::error('Trade update failed:', ['message' => $e->getMessage(), 'trade_id' => $trade->id]);
+            return response()->json(['error' => 'Failed to update trade', 'message' => $e->getMessage()], 500);
+        }
     }
-}
 
 
 
@@ -490,237 +522,237 @@ public function update(Request $request, Trade $trade): JsonResponse
     }
 
 
-        public function getAllTrades()
-        {
-                // Retrieve the current authenticated user's ID (or from query parameter if needed)
-                $userId =  auth()->id();
-            
-                // Eager load related models for better performance
-                $trades = Trade::with([
-                    'package.user' => function ($query) {
-                        $query->with([
-                            'profile' => function ($profileQuery) {
-                                $profileQuery->with([
-                                    'badge',          // Trader's badge
-                                    'country',        // Trader's country
-                                    'city',           // Trader's city
-                                    'languages',      // Trader's languages
-                                ]);
-                            }
+    public function getAllTrades()
+    {
+        // Retrieve the current authenticated user's ID (or from query parameter if needed)
+        $userId = auth()->id();
+
+        // Eager load related models for better performance
+        $trades = Trade::with([
+            'package.user' => function ($query) {
+                $query->with([
+                    'profile' => function ($profileQuery) {
+                        $profileQuery->with([
+                            'badge',          // Trader's badge
+                            'country',        // Trader's country
+                            'city',           // Trader's city
+                            'languages',      // Trader's languages
                         ]);
-                    },
-                    'marketPair',       // MarketPair relationship for Trade
-                    'tradeType',        // TradeType relationship for Trade
-                    'signalPerformance', // Eager load all signal performances for each trade
-                    'tradeJournal',     // Eager load TradeJournal relationship (added this line)
-                ])->get()->map(function ($trade) use ($userId) {
-                    // Check if the trade has an associated package and if the package has orders for the user
-                    $hasPackage = $trade->package && $trade->package->orders;
-            
-                    // Check if the user has purchased the relevant package
-                    $isUserInPackage = false;
-            
-                    // Loop through orders to find if the user has purchased this package
-                    if ($hasPackage) {
-                        $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
                     }
-            
-                    // Conditionally set trade details based on package purchase
-                    if (!$isUserInPackage) {
-                        // Show stars for all other users who haven't purchased the package
-                        $trade->take_profit = '***';
-                        $trade->stop_loss = '***';
-                        $trade->entry_price = '***';
-                        $trade->take_profit_2 = '***';
-                    } else {
-                        
-                        
-                    }
-            
-                    // Check if the user has followed this trade
-                    $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
-                    
-                     // Add journal data to the trade (added journal data)
-                    if ($trade->tradeJournal) {
-                        $trade->trade_journal = [
-                            'trade_decision' => $trade->tradeJournal->trade_decision,
-                            'trade_analysis' => $trade->tradeJournal->trade_analysis,
-                            'trade_reflection' => $trade->tradeJournal->trade_reflection,
-                            'trade_improvement' => $trade->tradeJournal->trade_improvement,
-                            'emotion' => $trade->tradeJournal->emotion ? $trade->tradeJournal->emotion->emotion_name : null, // Emotion related to the journal
-                        ];
-                    }
-                     // Add image URLs to the trade
-                    $trade->images = $trade->images->map(function ($image) {
-                        return [
-                            'image_name' => $image->image_name,
-                            'image_url' => $image->picture_url, // This will return the full URL using the accessor
-                       
-                        ];
-                    });
-                    return $trade;
-                });
+                ]);
+            },
+            'marketPair',       // MarketPair relationship for Trade
+            'tradeType',        // TradeType relationship for Trade
+            'signalPerformance', // Eager load all signal performances for each trade
+            'tradeJournal',     // Eager load TradeJournal relationship (added this line)
+        ])->get()->map(function ($trade) use ($userId) {
+            // Check if the trade has an associated package and if the package has orders for the user
+            $hasPackage = $trade->package && $trade->package->orders;
 
-                
-            
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Trades and related data retrieved successfully',
-                    'data' => [
-                        'trades' => $trades
-                    ]
-                ], 200);
-        }
+            // Check if the user has purchased the relevant package
+            $isUserInPackage = false;
+
+            // Loop through orders to find if the user has purchased this package
+            if ($hasPackage) {
+                $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
+            }
+
+            // Conditionally set trade details based on package purchase
+            if (!$isUserInPackage) {
+                // Show stars for all other users who haven't purchased the package
+                $trade->take_profit = '***';
+                $trade->stop_loss = '***';
+                $trade->entry_price = '***';
+                $trade->take_profit_2 = '***';
+            } else {
 
 
+            }
 
-        public function getAllTradesguest()
-        {
-                // Retrieve the current authenticated user's ID (or from query parameter if needed)
-                $userId =  0;
-            
-                // Eager load related models for better performance
-                $trades = Trade::with([
-                    'package.user' => function ($query) {
-                        $query->with([
-                            'profile' => function ($profileQuery) {
-                                $profileQuery->with([
-                                    'badge',          // Trader's badge
-                                    'country',        // Trader's country
-                                    'city',           // Trader's city
-                                    'languages',      // Trader's languages
-                                ]);
-                            }
+            // Check if the user has followed this trade
+            $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
+
+            // Add journal data to the trade (added journal data)
+            if ($trade->tradeJournal) {
+                $trade->trade_journal = [
+                    'trade_decision' => $trade->tradeJournal->trade_decision,
+                    'trade_analysis' => $trade->tradeJournal->trade_analysis,
+                    'trade_reflection' => $trade->tradeJournal->trade_reflection,
+                    'trade_improvement' => $trade->tradeJournal->trade_improvement,
+                    'emotion' => $trade->tradeJournal->emotion ? $trade->tradeJournal->emotion->emotion_name : null, // Emotion related to the journal
+                ];
+            }
+            // Add image URLs to the trade
+            $trade->images = $trade->images->map(function ($image) {
+                return [
+                    'image_name' => $image->image_name,
+                    'image_url' => $image->picture_url, // This will return the full URL using the accessor
+
+                ];
+            });
+            return $trade;
+        });
+
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Trades and related data retrieved successfully',
+            'data' => [
+                'trades' => $trades
+            ]
+        ], 200);
+    }
+
+
+
+    public function getAllTradesguest()
+    {
+        // Retrieve the current authenticated user's ID (or from query parameter if needed)
+        $userId = 0;
+
+        // Eager load related models for better performance
+        $trades = Trade::with([
+            'package.user' => function ($query) {
+                $query->with([
+                    'profile' => function ($profileQuery) {
+                        $profileQuery->with([
+                            'badge',          // Trader's badge
+                            'country',        // Trader's country
+                            'city',           // Trader's city
+                            'languages',      // Trader's languages
                         ]);
-                    },
-                    'marketPair',       // MarketPair relationship for Trade
-                    'tradeType',        // TradeType relationship for Trade
-                    'signalPerformance' // Eager load all signal performances for each trade
-                ])->get()->map(function ($trade) use ($userId) {
-                    // Check if the trade has an associated package and if the package has orders for the user
-                    $hasPackage = $trade->package && $trade->package->orders;
-            
-                    // Check if the user has purchased the relevant package
-                    $isUserInPackage = false;
-            
-                    // Loop through orders to find if the user has purchased this package
-                    if ($hasPackage) {
-                        $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
                     }
-            
-                    // Conditionally set trade details based on package purchase
-                    if (!$isUserInPackage) {
-                        // Show stars for all other users who haven't purchased the package
-                        $trade->take_profit = '***';
-                        $trade->stop_loss = '***';
-                        $trade->entry_price = '***';
-                        $trade->take_profit_2 = '***';
-                    } else {
-                        
-                        
-                    }
-            
-                    // Check if the user has followed this trade
-                    $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
-                    $trade->trade_journal = [ ];
-                     // Add image URLs to the trade
-                     $trade->images = [ ];
-                   
+                ]);
+            },
+            'marketPair',       // MarketPair relationship for Trade
+            'tradeType',        // TradeType relationship for Trade
+            'signalPerformance' // Eager load all signal performances for each trade
+        ])->get()->map(function ($trade) use ($userId) {
+            // Check if the trade has an associated package and if the package has orders for the user
+            $hasPackage = $trade->package && $trade->package->orders;
 
-                    return $trade;
-                });
-            
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Trades and related data retrieved successfully',
-                    'data' => [
-                        'trades' => $trades
-                    ]
-                ], 200);
-        }
+            // Check if the user has purchased the relevant package
+            $isUserInPackage = false;
+
+            // Loop through orders to find if the user has purchased this package
+            if ($hasPackage) {
+                $isUserInPackage = $trade->package->orders->where('user_id', $userId)->isNotEmpty();
+            }
+
+            // Conditionally set trade details based on package purchase
+            if (!$isUserInPackage) {
+                // Show stars for all other users who haven't purchased the package
+                $trade->take_profit = '***';
+                $trade->stop_loss = '***';
+                $trade->entry_price = '***';
+                $trade->take_profit_2 = '***';
+            } else {
 
 
+            }
 
-        
-        public function store_trade_journal(Request $request)
-        {
-            // Validate the incoming request data
-            $request->validate([
-                'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
-                'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
-                'trade_decision' => 'required|string|max:255',
-                'trade_reflection' => 'nullable|string',
-                'trade_improvement' => 'nullable|string',
-                'trade_strategy' => 'nullable|string',
-                'trade_risk_management' => 'nullable|string',
-                'trade_analysis' => 'nullable|string',
-                
-            ]);
-    
-            // Create a new trade journal entry
-            $tradeJournal = TradeJournal::create([
-                'trade_id' => $request->trade_id,
-                'emotion_id' => $request->emotion_id,
-                'trade_decision' => $request->trade_decision,
-                'trade_reflection' => $request->trade_reflection,
-                'trade_improvement' => $request->trade_improvement,
-                'trade_strategy' => $request->trade_strategy,
-                'trade_risk_management' => $request->trade_risk_management,
-                'trade_analysis' => $request->trade_analysis,
-            ]);
-    
-            // Return a success response
-            return response()->json([
-                'status' => true,
-                'message' => 'Trade journal entry created successfully.',
-                'data' => $tradeJournal,
-            ], 201);
-        }
-    
-        public function update_trade_journal(Request $request)
-        {
-            // Validate the incoming request data
-            $request->validate([
-                'id' => 'required|exists:trade_journals,id', // Ensure the trade journal exists
-                'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
-                'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
-                'trade_decision' => 'required|string|max:255',
-                'trade_reflection' => 'nullable|string',
-                'trade_improvement' => 'nullable|string',
-                'trade_strategy' => 'nullable|string',
-                'trade_risk_management' => 'nullable|string',
-                'trade_analysis' => 'nullable|string',
-            ]);
-
-            // Find the trade journal entry by ID
-            $tradeJournal = TradeJournal::findOrFail($request->id);
-
-            // Update the trade journal entry with the new data
-            $tradeJournal->update([
-                'trade_id' => $request->trade_id,
-                'emotion_id' => $request->emotion_id,
-                'trade_decision' => $request->trade_decision,
-                'trade_reflection' => $request->trade_reflection,
-                'trade_improvement' => $request->trade_improvement,
-                'trade_strategy' => $request->trade_strategy,
-                'trade_risk_management' => $request->trade_risk_management,
-                'trade_analysis' => $request->trade_analysis,
-            ]);
-
-            // Return a success response
-            return response()->json([
-                'status' => true,
-                'message' => 'Trade journal entry updated successfully.',
-                'data' => $tradeJournal,
-            ], 200);
-        }
-
-    
+            // Check if the user has followed this trade
+            $trade->is_followed = $trade->signalPerformance->where('user_id', $userId)->isNotEmpty();
+            $trade->trade_journal = [];
+            // Add image URLs to the trade
+            $trade->images = [];
 
 
-        
-    
-    
-    
+            return $trade;
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Trades and related data retrieved successfully',
+            'data' => [
+                'trades' => $trades
+            ]
+        ], 200);
+    }
+
+
+
+
+    public function store_trade_journal(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
+            'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
+            'trade_decision' => 'required|string|max:255',
+            'trade_reflection' => 'nullable|string',
+            'trade_improvement' => 'nullable|string',
+            'trade_strategy' => 'nullable|string',
+            'trade_risk_management' => 'nullable|string',
+            'trade_analysis' => 'nullable|string',
+
+        ]);
+
+        // Create a new trade journal entry
+        $tradeJournal = TradeJournal::create([
+            'trade_id' => $request->trade_id,
+            'emotion_id' => $request->emotion_id,
+            'trade_decision' => $request->trade_decision,
+            'trade_reflection' => $request->trade_reflection,
+            'trade_improvement' => $request->trade_improvement,
+            'trade_strategy' => $request->trade_strategy,
+            'trade_risk_management' => $request->trade_risk_management,
+            'trade_analysis' => $request->trade_analysis,
+        ]);
+
+        // Return a success response
+        return response()->json([
+            'status' => true,
+            'message' => 'Trade journal entry created successfully.',
+            'data' => $tradeJournal,
+        ], 201);
+    }
+
+    public function update_trade_journal(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required|exists:trade_journals,id', // Ensure the trade journal exists
+            'trade_id' => 'required|exists:trades,id', // Ensure the trade exists
+            'emotion_id' => 'nullable|exists:trade_emotions,id', // Ensure the emotion exists (nullable)
+            'trade_decision' => 'required|string|max:255',
+            'trade_reflection' => 'nullable|string',
+            'trade_improvement' => 'nullable|string',
+            'trade_strategy' => 'nullable|string',
+            'trade_risk_management' => 'nullable|string',
+            'trade_analysis' => 'nullable|string',
+        ]);
+
+        // Find the trade journal entry by ID
+        $tradeJournal = TradeJournal::findOrFail($request->id);
+
+        // Update the trade journal entry with the new data
+        $tradeJournal->update([
+            'trade_id' => $request->trade_id,
+            'emotion_id' => $request->emotion_id,
+            'trade_decision' => $request->trade_decision,
+            'trade_reflection' => $request->trade_reflection,
+            'trade_improvement' => $request->trade_improvement,
+            'trade_strategy' => $request->trade_strategy,
+            'trade_risk_management' => $request->trade_risk_management,
+            'trade_analysis' => $request->trade_analysis,
+        ]);
+
+        // Return a success response
+        return response()->json([
+            'status' => true,
+            'message' => 'Trade journal entry updated successfully.',
+            'data' => $tradeJournal,
+        ], 200);
+    }
+
+
+
+
+
+
+
+
 
 }
