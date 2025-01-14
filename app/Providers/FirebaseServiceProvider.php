@@ -102,25 +102,16 @@ class FirebaseServiceProvider extends ServiceProvider
         // Dummy data to be written to Firestore
         $data = [
             'username' => 'John Doe',
-           
+            
+            
         ];
 
-    $firestore = $this->firestore->database();
+        $firestore = $this->firestore->database();
         
 
-      // $docRef = $firestore->collection('chatRooms')->documents(); 
-      $docRef = $firestore->collection('chatRooms')->limit(1)->documents();
-
-
-      //  $firestore = app('firebase.firestore');
-//$db = $firestore->database();
-//$doctorRef = $db->collection('chatRooms');
-
-//$data['users'] = $doctorRef->documents();
-dd($docRef);
-
+        $docRef = $firestore->collection('users')->document('user_123'); 
         // Reference to the document in Firestore (replace with your collection/document path)
-        //$docRef = $this->firestore->collection('users')->document('user_123');
+        $docRef = $this->firestore->collection('users')->document('user_123');
 
         try {
             // Log data before setting
@@ -134,13 +125,11 @@ dd($docRef);
                 }
             }
 
-            // Convert null to empty strings
-            $data = array_map(function($value) {
-                return is_null($value) ? '' : (string) $value;
-            }, $data);
+            
+           
 
             // Write to Firestore
-            //$result = $docRef->set($data, ['merge' => true]);
+            $result = $docRef->set($data);
 
             Log::info('Data successfully written to Firestore', [
                 'document_path' => $docRef->name(),
