@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Messaging\MessageTarget;
 use Kreait\Firebase\Messaging\MulticastMessage;
 use Kreait\Firebase\Messaging\MulticastSendReport;
+use Kreait\Firebase\Analytics;
 
 class FirebaseServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,8 @@ class FirebaseServiceProvider extends ServiceProvider
         $serviceAccountPath = storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json');
         $factory = (new Factory)->withServiceAccount($serviceAccountPath);
         $this->messaging = $factory->createMessaging();
+         // Initialize Firebase Analytics
+        //$this->analytics = $factory->createAnalytics();
     }
 
     public function sendNotification(array $tokens, $title, $body, $data = [], $type)
@@ -37,12 +40,11 @@ class FirebaseServiceProvider extends ServiceProvider
                 // Send a multicast notification to the current chunk
                 $response = $this->messaging->sendMulticast($message, $chunk);
 
-                // Log the notification details
-                Log::info('Campaign Notification Sent', [
-                    'Tokens' => $chunk,
+
+                Log::channel('notification_logs')->info('Notification:', [
+                    'Token' => $chunk,
                     'Title' => $title,
                     'Body' => $body,
-                    'Data' => $data,
                     'Type' => $type,
                     'SuccessCount' => $response->successes()->count(),
                     'FailureCount' => $response->failures()->count(),
@@ -52,7 +54,7 @@ class FirebaseServiceProvider extends ServiceProvider
                 //$this->trackNotificationResponses($chunk, $response);
 
                 // Log the campaign in Firebase Analytics
-                $this->logNotificationToFirebaseAnalytics($chunk, $title, $body, $type);
+                //$this->logNotificationToFirebaseAnalytics($chunk, $title, $body, $type);
 
             } catch (\Kreait\Firebase\Exception\MessagingException $e) {
                 // Log the error for this chunk
@@ -65,25 +67,24 @@ class FirebaseServiceProvider extends ServiceProvider
     }
 
 
-    private function logNotificationToFirebaseAnalytics($token, $title, $body, $type)
-    {
-        // Firebase Analytics event logging
-        try {
-            $analytics = app('firebase.analytics');
-
-            $analytics->logEvent('notification_sent', [
-                'Token' => $token,
-                'Title' => $title,
-                'Body' => $body,
-                'Type' => $type,
-                'Timestamp' => now()->toDateTimeString(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error logging to Firebase Analytics', [
-                'Error' => $e->getMessage(),
-            ]);
-        }
-    }
+    // private function logNotificationToFirebaseAnalytics($token, $title, $body, $type)
+    // {
+    //     // Firebase Analytics event logging
+    //     try {
+    //         // Log event to Firebase Analytics
+    //         $this->analytics->logEvent('notification_sent', [
+    //             'Token' => $token,
+    //             'Title' => $title,
+    //             'Body' => $body,
+    //             'Type' => $type,
+    //             'Timestamp' => now()->toDateTimeString(),
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error logging to Firebase Analytics', [
+    //             'Error' => $e->getMessage(),
+    //         ]);
+    //     }
+    // }
 
     // private function trackNotificationResponses(array $tokens, $response)
     // {

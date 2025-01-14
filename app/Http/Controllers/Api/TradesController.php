@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Trade;
+use App\Models\TradeType;
+use App\Models\MarketPair;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Package;
@@ -218,23 +220,52 @@ class TradesController extends Controller
                 ->whereNotNull('fcm_token')
                 ->pluck('fcm_token'); // Get all the FCM tokens
 
-            // Step 2: Get package name from the packages table
-            $packageName = Package::find($validated['package_id'])->name ?? 'Unknown Package';
+            // Step 2: Get package details
+            $package = Package::find($validated['package_id']);
+            $packageName = $package->name ?? 'Unknown Package';
 
-            // Step 3: Send notification if there are valid tokens
+            // Step 3: Get package owner's username
+            $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
+
+            // Step 4: Get the market pair name from the market_pairs table
+            $marketPair = MarketPair::find($validated['market_pair_id']);
+            $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
+
+            // Step 5: Get the trade type name from the trade_types table
+            $tradeType = TradeType::find($validated['trade_type_id']);
+            $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
+
+            // Step 6: Prepare the notification title
+            $title = "{$ownerUsername} shared a new signal with trade details";
+
+            // Step 7: Format the notification body for a user-friendly presentation
+            $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
+            $body .= "📈 Market Pair: {$marketPairName}\n";
+            $body .= "🔹 Trade Type: {$tradeTypeName}\n";
+            $body .= "💰 Entry Price: {$validated['entry_price']}\n";
+            $body .= "📊 Take Profit: " . implode(' / ', $validated['take_profit']) . "\n"; // Show take profit as a range if multiple
+            $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
+
+            // Step 8: Send notification if there are valid tokens
             if ($tokens->isNotEmpty()) {
                 send_push_notification(
                     $tokens->toArray(),
-                    "New Trade Created",
-                    "A new trade has been created for the package '{$packageName}' you ordered!",
+                    $title,
+                    $body,
                     [
                         'trade_id' => $trade->id,
                         'package_id' => $validated['package_id'],
+                        'market_pair_id' => $validated['market_pair_id'],
+                        'trade_type_id' => $validated['trade_type_id'],
+                        'entry_price' => $validated['entry_price'],
+                        'take_profit' => $validated['take_profit'],
+                        'stop_loss' => $validated['stop_loss'],
                         'type' => 'trade_notification'
                     ],
                     'trade_notification'
                 );
             }
+
 
             //end notification
 

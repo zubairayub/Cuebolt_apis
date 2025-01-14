@@ -17,47 +17,47 @@ class FirebaseController extends Controller
     }
 
     public function sendPushNotification(Request $request)
-{
-    // Validate the request
-    $request->validate([
-        'tokens' => 'required|array',  // Updated to accept an array of tokens
-        'tokens.*' => 'string',         // Ensuring each token in the array is a string
-        'title' => 'required|string',
-        'body' => 'required|string',
-        'data' => 'nullable|array',
-    ]);
-
-    // Extract the input values
-    $tokens = $request->input('tokens');  // Tokens is now an array
-    $title = $request->input('title');
-    $body = $request->input('body');
-    $data = $request->input('data');
-
-    try {
-        // Assuming your service method is sending the notification
-        $type = "Testing";
-        
-
-        // Check if tokens exist and loop through them to send notifications
-       
-                send_push_notification($tokens, $title, $body, $data, $type);  // Sending notification for each token
-           
-
-        // Return success response
-        return [
-            'status' => 'success',
-            'message' => 'Notification sent successfully'
-        ];
-
-    } catch (\Exception $e) {
-        // Log the error if something goes wrong
-        Log::error('Error sending notification', [
-            'error_message' => $e->getMessage(),
-            'stack_trace' => $e->getTraceAsString(),
+    {
+        // Validate the request
+        $request->validate([
+            'tokens' => 'required|array',  // Updated to accept an array of tokens
+            'tokens.*' => 'string',         // Ensuring each token in the array is a string
+            'title' => 'required|string',
+            'body' => 'required|string',
+            'data' => 'nullable|array',
         ]);
-        return response()->json(['message' => 'Error sending notification', 'error' => $e->getMessage()], 500);
+
+        // Extract the input values
+        $tokens = $request->input('tokens');  // Tokens is now an array
+        $title = $request->input('title');
+        $body = $request->input('body');
+        $data = $request->input('data');
+
+        try {
+            // Assuming your service method is sending the notification
+            $type = "Testing";
+
+
+            // Check if tokens exist and loop through them to send notifications
+
+            send_push_notification($tokens, $title, $body, $data, $type);  // Sending notification for each token
+
+
+            // Return success response
+            return [
+                'status' => 'success',
+                'message' => 'Notification sent successfully'
+            ];
+
+        } catch (\Exception $e) {
+            // Log the error if something goes wrong
+            Log::error('Error sending notification', [
+                'error_message' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['message' => 'Error sending notification', 'error' => $e->getMessage()], 500);
+        }
     }
-}
 
 
 
