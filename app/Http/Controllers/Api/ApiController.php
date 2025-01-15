@@ -238,7 +238,7 @@ class ApiController extends Controller
 
             if ($user->fcm_token) {
                 $token = $user->fcm_token;
-               // send_push_notification($token, $title, $body, $data, $type );
+              //  send_push_notification($token, $title, $body, $data, $type );
             }
 
             return response()->json([
