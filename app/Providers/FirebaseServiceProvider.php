@@ -69,25 +69,21 @@ class FirebaseServiceProvider extends ServiceProvider
         }
     }
 
-    public function addUserToFirestore($userId)
+    public function addUserToFirestore($userId,$username,$email,$profile_pictue)
     {
         try {
             // Retrieve user data from the User model (UserProfile model if needed)
-            $user = User::with('profile')->find($userId); // Assuming `profile` is a relation to user_profiles
+            //$user = User::with('profile')->find($userId); // Assuming `profile` is a relation to user_profiles
 
-            if (!$user) {
-                Log::error('User not found', ['user_id' => $userId]);
-                throw new \Exception("User not found");
-            }
-
-            $userProfile = $user->profile; // Fetch user profile (ensure `profile` relation exists)
+            
+           // $userProfile = $user->profile; // Fetch user profile (ensure `profile` relation exists)
             
             // Prepare data to write to Firestore
             $data = [
-                'username' => $user->username,
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'profile_picture_url' => $userProfile ? $userProfile->profile_picture_url : null,
+                'username' => $username,
+                'user_id' => $userId,
+                'email' => $email,
+                'profile_picture_url' => $profile_pictue,
             ];
 
             // Get Firestore database instance
@@ -97,7 +93,7 @@ class FirebaseServiceProvider extends ServiceProvider
             $docRef = $firestore->collection('users')->document($userId);
 
             // Log data before setting
-            Log::info('Preparing to write data', ['data' => $data]);
+            Log::channel('notification_logs')->info('Register user into firestore', ['data' => $data]);
 
             // Validate data
             // foreach ($data as $key => $value) {

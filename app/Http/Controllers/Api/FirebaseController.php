@@ -40,8 +40,8 @@ class FirebaseController extends Controller
 
             // Check if tokens exist and loop through them to send notifications
 
-            //send_push_notification($tokens, $title, $body, $data, $type);  // Sending notification for each token
-           register_user_firestore( $title);
+            send_push_notification($tokens, $title, $body, $data, $type);  // Sending notification for each token
+           //register_user_firestore( $title);
 
             // Return success response
             return [
