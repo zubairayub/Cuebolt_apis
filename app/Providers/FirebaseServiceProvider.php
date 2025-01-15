@@ -37,38 +37,99 @@ class FirebaseServiceProvider extends ServiceProvider
         $this->firestore = $this->factory->createFirestore(); // Firestore initialization
     }
 
+    // public function sendNotification(array $tokens, $title, $body, $data = [], $type)
+    // {
+    //     // Split tokens into chunks of 500
+    //     $tokenChunks = array_chunk($tokens, 500);
+
+    //     foreach ($tokenChunks as $chunk) {
+    //         $message = CloudMessage::new()
+    //             ->withNotification(Notification::create($title, $body))
+    //             ->withData($data);
+
+    //         try {
+    //             // Send a multicast notification to the current chunk
+    //             $response = $this->messaging->sendMulticast($message, $chunk);
+
+    //             Log::channel('notification_logs')->info('Notification sent successfully', [
+    //                 'Token' => $chunk,
+    //                 'Title' => $title,
+    //                 'Body' => $body,
+    //                 'Type' => $type,
+    //                 'SuccessCount' => $response->successes()->count(),
+    //                 'FailureCount' => $response->failures()->count(),
+    //             ]);
+    //         } catch (\Kreait\Firebase\Exception\MessagingException $e) {
+    //             // Log the error for this chunk
+    //             Log::error('Error sending notification', [
+    //                 'Tokens' => $chunk,
+    //                 'Error' => $e->getMessage(),
+    //             ]);
+    //         }
+    //     }
+    // }
+
+   
     public function sendNotification(array $tokens, $title, $body, $data = [], $type)
     {
         // Split tokens into chunks of 500
         $tokenChunks = array_chunk($tokens, 500);
-
+    
         foreach ($tokenChunks as $chunk) {
             $message = CloudMessage::new()
                 ->withNotification(Notification::create($title, $body))
                 ->withData($data);
-
-            try {
-                // Send a multicast notification to the current chunk
-                $response = $this->messaging->sendMulticast($message, $chunk);
-
-                Log::channel('notification_logs')->info('Notification sent successfully', [
-                    'Token' => $chunk,
-                    'Title' => $title,
-                    'Body' => $body,
-                    'Type' => $type,
-                    'SuccessCount' => $response->successes()->count(),
-                    'FailureCount' => $response->failures()->count(),
-                ]);
-            } catch (\Kreait\Firebase\Exception\MessagingException $e) {
-                // Log the error for this chunk
-                Log::error('Error sending notification', [
-                    'Tokens' => $chunk,
-                    'Error' => $e->getMessage(),
-                ]);
+    
+            $attempts = 0; // Retry counter
+            $maxRetries = 3; // Maximum retries for each chunk
+    
+            while ($attempts < $maxRetries) {
+                try {
+                    // Attempt to send a multicast notification
+                    $response = $this->messaging->sendMulticast($message, $chunk);
+    
+                    // Log success and break out of the retry loop
+                    Log::channel('notification_logs')->info('Notification sent successfully', [
+                        'Tokens' => $chunk,
+                        'Title' => $title,
+                        'Body' => $body,
+                        'Type' => $type,
+                        'SuccessCount' => $response->successes()->count(),
+                        'FailureCount' => $response->failures()->count(),
+                    ]);
+                    break; // Exit retry loop on success
+    
+                } catch (\Kreait\Firebase\Exception\MessagingException $e) {
+                    $attempts++;
+    
+                    // Log the error
+                    Log::error('Error sending notification (attempt ' . $attempts . ')', [
+                        'Tokens' => $chunk,
+                        'Error' => $e->getMessage(),
+                    ]);
+    
+                    // Check if maximum retries are exceeded
+                    if ($attempts >= $maxRetries) {
+                        Log::critical('Notification sending failed after maximum retries', [
+                            'Tokens' => $chunk,
+                            'Error' => $e->getMessage(),
+                        ]);
+                    } else {
+                        // Wait before retrying (e.g., exponential backoff)
+                        sleep(pow(2, $attempts)); // Wait: 2, 4, 8 seconds for each retry
+                    }
+                } catch (\Exception $e) {
+                    // Catch any other unexpected errors and log them
+                    Log::critical('Unexpected error during notification sending', [
+                        'Tokens' => $chunk,
+                        'Error' => $e->getMessage(),
+                    ]);
+                    break; // Stop retries for unexpected errors
+                }
             }
         }
     }
-
+    
     public function addUserToFirestore($userId,$username,$email,$profile_pictue)
     {
         try {
