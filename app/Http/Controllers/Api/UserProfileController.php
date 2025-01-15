@@ -119,8 +119,8 @@ class UserProfileController extends Controller
 
             // Save the profile
             $userProfile->save();
-
-            return response()->json(['message' => 'Profile updated successfully', 'data' => $userProfile], 200);
+            return $userProfile; // Return the model instance directly
+           // return response()->json(['message' => 'Profile updated successfully', 'data' => $userProfile], 200);
 
         } catch (\Exception $e) {
             Log::error('Error updating profile:', ['error' => $e->getMessage()]);

@@ -23,9 +23,10 @@ if (!function_exists('register_user_firebase')) {
 
 
 if (!function_exists('register_user_firestore')) {
-    function register_user_firestore($user_id)
+    function register_user_firestore($userId,$username,$email,$profile_pictue)
     {
+        
 
-        app(App\Providers\FirebaseServiceProvider::class)->addUserToFirestore($user_id);
+        app(App\Providers\FirebaseServiceProvider::class)->addUserToFirestore($userId,$username,$email,$profile_pictue);
     }
 }
