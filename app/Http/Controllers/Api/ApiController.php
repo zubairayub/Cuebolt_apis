@@ -230,7 +230,7 @@ class ApiController extends Controller
             // After user creation, create the user profile using the controller
             $profileController = new UserProfileController();
             $userProfile = $profileController->createProfile(new Request(), $user->id);
-            register_user_firestore($user->id,$user->username,$user->email,$userProfile->getPictureUrlAttribute());
+           // register_user_firestore($user->id,$user->username,$user->email,$userProfile->getPictureUrlAttribute());
             $title = "Welcome to Cuebolt";
             $body = "Your only Trading Marketplace";
             $type = "Register";
