@@ -27,9 +27,9 @@ class FirebaseServiceProvider extends ServiceProvider
         $this->messaging = $this->factory->createMessaging();
 
         // Initialize Firestore client using FirestoreClient directly
-        $this->firestore = new FirestoreClient([
-            'projectId' => 'cuebolt-854b1', // Provide your Firebase project ID here
-        ]);
+        // $this->firestore = new FirestoreClient([
+        //     'projectId' => 'cuebolt-854b1', // Provide your Firebase project ID here
+        // ]);
     }
 
     // Send Notification Method with retry logic
