@@ -138,58 +138,58 @@ class FirebaseServiceProvider extends ServiceProvider
 
     public function addUserToFirestore($userId, $username, $email, $profile_pictue)
     {
-        try {
-            // Retrieve user data from the User model (UserProfile model if needed)
-            //$user = User::with('profile')->find($userId); // Assuming `profile` is a relation to user_profiles
+        // try {
+        //     // Retrieve user data from the User model (UserProfile model if needed)
+        //     //$user = User::with('profile')->find($userId); // Assuming `profile` is a relation to user_profiles
 
 
-           // $userProfile = $user->profile; // Fetch user profile (ensure `profile` relation exists)
+        //    // $userProfile = $user->profile; // Fetch user profile (ensure `profile` relation exists)
 
-            // Prepare data to write to Firestore
-            $data = [
-                'username' => $username,
-                'user_id' => $userId,
-                'email' => $email,
-                'profile_picture_url' => $profile_pictue,
-            ];
+        //     // Prepare data to write to Firestore
+        //     $data = [
+        //         'username' => $username,
+        //         'user_id' => $userId,
+        //         'email' => $email,
+        //         'profile_picture_url' => $profile_pictue,
+        //     ];
 
-            // Get Firestore database instance
-            $firestore = $this->firestore->database();
+        //     // Get Firestore database instance
+        //     $firestore = $this->firestore->database();
 
-            // Reference to the 'users' collection and the specific document (userId)
-           $docRef = $firestore->collection('users')->document($userId);
+        //     // Reference to the 'users' collection and the specific document (userId)
+        //    $docRef = $firestore->collection('users')->document($userId);
 
-            // Log data before setting
-            Log::channel('notification_logs')->info('Register user into firestore', ['data' => $data]);
+        //     // Log data before setting
+        //     Log::channel('notification_logs')->info('Register user into firestore', ['data' => $data]);
 
-            // Validate data
-            foreach ($data as $key => $value) {
-                if (!is_string($value) && $value !== null) {
-                    Log::error("Invalid value for key '{$key}'", ['value' => $value]);
-                    throw new \InvalidArgumentException("Invalid value for key '{$key}'");
-                }
-            }
+        //     // Validate data
+        //     foreach ($data as $key => $value) {
+        //         if (!is_string($value) && $value !== null) {
+        //             Log::error("Invalid value for key '{$key}'", ['value' => $value]);
+        //             throw new \InvalidArgumentException("Invalid value for key '{$key}'");
+        //         }
+        //     }
 
-            // Write to Firestore
-            $result = $docRef->set($data);
+        //     // Write to Firestore
+        //     $result = $docRef->set($data);
 
-            Log::info('Data successfully written to Firestore', [
-                'document_path' => $docRef->path(), // `path()` is correct here
-                'data' => $data,
-            ]);
-        } catch (\Google\Cloud\Core\Exception\GoogleException $e) {
-            Log::error('Firestore Google Exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            throw $e;
-        } catch (\Exception $e) {
-            Log::error('Generic Exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            throw $e;
-        }
+        //     Log::info('Data successfully written to Firestore', [
+        //         'document_path' => $docRef->path(), // `path()` is correct here
+        //         'data' => $data,
+        //     ]);
+        // } catch (\Google\Cloud\Core\Exception\GoogleException $e) {
+        //     Log::error('Firestore Google Exception', [
+        //         'error' => $e->getMessage(),
+        //         'trace' => $e->getTraceAsString(),
+        //     ]);
+        //     throw $e;
+        // } catch (\Exception $e) {
+        //     Log::error('Generic Exception', [
+        //         'error' => $e->getMessage(),
+        //         'trace' => $e->getTraceAsString(),
+        //     ]);
+        //     throw $e;
+        // }
     }
 
     public function register()
