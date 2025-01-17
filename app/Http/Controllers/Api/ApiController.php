@@ -314,92 +314,157 @@ class ApiController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    // public function login(Request $request)
+    // {
+    //     // Validate incoming request
+    //     $request->validate([
+    //         'login' => 'nullable|string',  // This will accept email, username, or phone
+    //         'password' => 'nullable|string',
+    //         'facebook_id' => 'nullable|string|max:255',
+    //         'google_id' => 'nullable|string|max:255',
+    //     ]);
+
+
+    //     // Build the query dynamically based on non-null request parameters
+    //     $userQuery = User::query();
+
+    //     if (!empty($request->login)) {
+    //         $userQuery->where(function ($query) use ($request) {
+    //             $query->where('email', $request->login)
+    //                 ->orWhere('username', $request->login)
+    //                 ->orWhere('phone', $request->login);
+    //         });
+    //     }
+
+    //     if (!empty($request->facebook_id)) {
+    //         $userQuery->orWhere('facebook_id', $request->facebook_id);
+    //     }
+
+    //     if (!empty($request->google_id)) {
+    //         $userQuery->orWhere('google_id', $request->google_id);
+    //     }
+
+       
+    //     // Check if the user exists and password matches
+    //     if ($user && (Hash::check($request->password, $user->password) || $request->filled('facebook_id') || $request->filled('google_id'))) {
+    //         // Create an authentication token for the user
+    //         $token = $user->createToken('MyAppToken')->accessToken;
+
+
+    //         // Register user device
+    //         getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
+
+    //         // Check if the FCM token is provided in the request
+    //         if ($request->has('fcm_token') && !empty($request->fcm_token)) {
+
+    //             // Update FCM token in the users table if it's not null
+    //             $user->update(['fcm_token' => $request->fcm_token]);
+    //         }
+          
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Login Successful',
+    //             'data' => [
+    //                 'user' => $user,
+    //                 'token' => $token,
+    //             ]
+    //         ], 200); // HTTP status 200 OK
+
+
+    //     }
+
+    //     // If user not found or password does not match
+    //     return response()->json([
+    //         'status' => false,
+    //         'message' => 'Invalid login credentials',
+    //         'data' => []
+    //     ], 401); // HTTP status 401 Unauthorized
+    // }
+
+
+
     public function login(Request $request)
-    {
-        // Validate incoming request
-        $request->validate([
-            'login' => 'nullable|string',  // This will accept email, username, or phone
-            'password' => 'nullable|string',
-            'facebook_id' => 'nullable|string|max:255',
-            'google_id' => 'nullable|string|max:255',
-        ]);
+{
+    // Validate incoming request
+    $validated = $request->validate([
+        'login' => 'nullable|string|max:255',  // Accepts email, username, or phone
+        'password' => 'nullable|string|min:8|max:255',
+        'facebook_id' => 'nullable|string|max:255',
+        'google_id' => 'nullable|string|max:255',
+        'fcm_token' => 'nullable|string|max:255',
+    ], [
+        'login.max' => 'The login field must not exceed 255 characters.',
+        'password.min' => 'The password must be at least 8 characters.',
+    ]);
 
-
-        // Build the query dynamically based on non-null request parameters
+    try {
+        // Build the user query dynamically
         $userQuery = User::query();
 
-        if (!empty($request->login)) {
-            $userQuery->where(function ($query) use ($request) {
-                $query->where('email', $request->login)
-                    ->orWhere('username', $request->login)
-                    ->orWhere('phone', $request->login);
+        if (!empty($validated['login'])) {
+            $userQuery->where(function ($query) use ($validated) {
+                $query->where('email', $validated['login'])
+                      ->orWhere('username', $validated['login'])
+                      ->orWhere('phone', $validated['login']);
             });
         }
 
-        if (!empty($request->facebook_id)) {
-            $userQuery->orWhere('facebook_id', $request->facebook_id);
+        if (!empty($validated['facebook_id'])) {
+            $userQuery->orWhere('facebook_id', $validated['facebook_id']);
         }
 
-        if (!empty($request->google_id)) {
-            $userQuery->orWhere('google_id', $request->google_id);
+        if (!empty($validated['google_id'])) {
+            $userQuery->orWhere('google_id', $validated['google_id']);
         }
 
-        // Execute the query and get the first matching user
+        // Retrieve the user
         $user = $userQuery->first();
 
-        if ($user) {
-            $title = "Welcome Back";
-            $body = "View your signals";
-            $type = "Login";
-            $token = $user->fcm_token;
-        
-            // Continue with your logic here
-        } else {
-            // Handle the case where the user is not found
-            return response()->json(['message' => 'User not found'], 404);
-        }
-        $data = [];
+        // Validate user and credentials
+        if ($user && (
+            (!empty($validated['password']) && Hash::check($validated['password'], $user->password)) ||
+            $request->filled('facebook_id') ||
+            $request->filled('google_id')
+        )) {
+            // Generate authentication token
+            $token = $user->createToken('UserToken-' . $user->id)->accessToken;
 
-        if ($token) {
-            //send_push_notification([$token], $title, $body, $data, $type );
-        }
+            // Register user device asynchronously
+            dispatch(function () use ($user, $token) {
+                getUserDevice($user, $user->tokens()->latest()->first()->id);
+            });
 
-        // Check if the user exists and password matches
-        if ($user && (Hash::check($request->password, $user->password) || $request->filled('facebook_id') || $request->filled('google_id'))) {
-            // Create an authentication token for the user
-            $token = $user->createToken('MyAppToken')->accessToken;
-
-
-            // Register user device
-            getUserDevice($user, $user->tokens()->latest()->first()->id); // Pass user and token
-
-            // Check if the FCM token is provided in the request
-            if ($request->has('fcm_token') && !empty($request->fcm_token)) {
-
-                // Update FCM token in the users table if it's not null
-                $user->update(['fcm_token' => $request->fcm_token]);
+            // Update FCM token if provided
+            if ($request->filled('fcm_token')) {
+                $user->update(['fcm_token' => $validated['fcm_token']]);
             }
-          
+
+            // Successful response
             return response()->json([
                 'status' => true,
-                'message' => 'Login Successful',
+                'message' => 'Login successful',
                 'data' => [
                     'user' => $user,
                     'token' => $token,
-                ]
-            ], 200); // HTTP status 200 OK
-
-
+                ],
+            ], 200);
         }
 
-        // If user not found or password does not match
+        // Invalid credentials response
         return response()->json([
             'status' => false,
             'message' => 'Invalid login credentials',
-            'data' => []
-        ], 401); // HTTP status 401 Unauthorized
-    }
+        ], 401);
 
+    } catch (\Throwable $e) {
+        // Handle unexpected errors
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred during login',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
 
