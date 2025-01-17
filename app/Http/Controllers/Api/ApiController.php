@@ -131,6 +131,8 @@ class ApiController extends Controller
             // send_push_notification($user->fcm_token, $title, $body, $data, $type);
         }
 
+        register_user_firestore($user->id,$user->username,$user->email,"url");
+
         return response()->json([
             'status' => true,
             'message' => 'User registered successfully. Please verify the OTP sent to your email.',

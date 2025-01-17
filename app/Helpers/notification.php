@@ -17,7 +17,7 @@ if (!function_exists('register_user_firebase')) {
     function register_user_firebase($email, $password, $displayName = null)
     {
 
-      //  app(App\Providers\FirebaseServiceProvider::class)->createUser($email, $password, $displayName = null);
+     //   app(App\Providers\FirebaseServiceProvider::class)->createUser($email, $password, $displayName = null);
     }
 }
 
