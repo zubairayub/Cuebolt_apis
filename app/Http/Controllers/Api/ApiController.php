@@ -346,10 +346,18 @@ class ApiController extends Controller
 
         // Execute the query and get the first matching user
         $user = $userQuery->first();
-        $title = "Welcome Back";
-        $body = "View your signals";
-        $type = "Login";
-        $token = $user->fcm_token;
+
+        if ($user) {
+            $title = "Welcome Back";
+            $body = "View your signals";
+            $type = "Login";
+            $token = $user->fcm_token;
+        
+            // Continue with your logic here
+        } else {
+            // Handle the case where the user is not found
+            return response()->json(['message' => 'User not found'], 404);
+        }
         $data = [];
 
         if ($token) {
