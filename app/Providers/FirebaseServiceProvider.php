@@ -8,7 +8,7 @@ use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Firestore;
-use Google\Cloud\Firestore\FirestoreClient;
+// use Google\Cloud\Firestore\FirestoreClient;
 use App\Models\User; // Import User model at the top
 
 class FirebaseServiceProvider extends ServiceProvider
