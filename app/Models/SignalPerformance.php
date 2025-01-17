@@ -33,5 +33,10 @@ class SignalPerformance extends Model
         return $this->belongsTo(User::class, 'user_id', 'id'); // user_id links to users.id
     }
 
+    public function marketPair()
+    {
+        return $this->belongsTo(MarketPair::class, 'market_pair_id', 'id'); // market_pair_id is the foreign key
+    }
+
 
 }

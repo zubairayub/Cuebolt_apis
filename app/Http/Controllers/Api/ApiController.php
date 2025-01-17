@@ -222,7 +222,7 @@ class ApiController extends Controller
 
             // Send OTP via email
             if ($user->email) {
-                Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
+                //Mail::to($user->email)->send(new OtpMail($otp)); // Create OtpMail to send the OTP
             }
 
 

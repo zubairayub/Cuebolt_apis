@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SignalPerformance;
+use App\Models\Trade;
 use Illuminate\Support\Facades\Http;
 
 class SignalPerformanceController extends Controller
@@ -33,8 +34,12 @@ class SignalPerformanceController extends Controller
             'take_profit' => 'required|numeric',
             'stop_loss' => 'required|numeric',
             'status' => 'required|string|in:active,hit_take_profit,hit_stop_loss', // Valid statuses
-            
+
         ]);
+
+        $trade = Trade::find($request->signal_id);
+        // Get the market_pair_id from the trade
+        $marketPairId = $trade->market_pair_id;  // Assuming `market_pair_id` is present in the trades table
 
         // Create a new record in the database
         $performance = SignalPerformance::create([
@@ -45,7 +50,8 @@ class SignalPerformanceController extends Controller
             'take_profit' => $request->take_profit,
             'stop_loss' => $request->stop_loss,
             'status' => $request->status,
-            
+            'market_pair_id' => $marketPairId,  
+
         ]);
 
         // Return the created record
@@ -55,12 +61,12 @@ class SignalPerformanceController extends Controller
 
     public function update(Request $request, $signalId)
     {
-        $signal = Signal::find($signalId);
+        $signal = Trade::find($signalId);
 
         if (!$signal) {
             return response()->json(['message' => 'Signal not found'], 404);
         }
-
+        $marketPairId =  $signal->market_pair_id;  // Assuming `market_pair_id` is present in the trades table
         $currentPrice = $request->input('current_price');
         $profitLoss = $currentPrice - $signal->entry_price;
         $status = 'active';
@@ -80,7 +86,8 @@ class SignalPerformanceController extends Controller
                 'take_profit' => $signal->take_profit,
                 'stop_loss' => $signal->stop_loss,
                 'status' => $status,
-                
+                'market_pair_id' => $marketPairId,  
+
             ]
         );
 
@@ -113,7 +120,7 @@ class SignalPerformanceController extends Controller
 
         // Get the symbol for the crypto pair
         $cryptoPair = $marketPair->base_currency . $marketPair->quote_currency;
-        
+
         // Fetch the live price from Binance API
         $response = Http::get("https://api.binance.com/api/v3/ticker/price?symbol={$cryptoPair}");
 
