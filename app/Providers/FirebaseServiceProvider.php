@@ -29,6 +29,10 @@ class FirebaseServiceProvider extends ServiceProvider
         // $this->firestore = new FirestoreClient([ 
         //     'keyFilePath' => storage_path('cuebolt-854b1-firebase-adminsdk-vmld7-7f5a214e83.json') 
         // ]);
+
+        $firestore = new FirestoreClient([
+            'transport' => 'rest', // Forces the use of the REST transport instead of gRPC
+        ]);
         
         // Initialize Firebase Messaging
         $this->messaging = $this->factory->createMessaging();
