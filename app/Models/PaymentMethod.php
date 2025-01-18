@@ -20,5 +20,11 @@ class PaymentMethod extends Model
     {
         return $this->hasMany(Order::class);
     }
+    // In App\Models\PaymentMethod
+    public function userPaymentDetails()
+    {
+        return $this->hasMany(UserPaymentDetail::class, 'payment_method_id', 'id');
+    }
+
 }
 

@@ -42,7 +42,7 @@ Route::put('/welcome-screen', [WelcomeScreenController::class, 'updateWelcomeScr
 
 Route::get('/test-firestore', function () {
     $firestore = app(Firestore::class)->database();
-    
+
     $collection = $firestore->collection('test-collection');
     $document = $collection->document('test-document');
     $document->set([
@@ -79,24 +79,24 @@ Route::get('all/trades/guest', [TradesController::class, 'getAllTradesguest']);
 Route::get('all/traders', [UserProfileController::class, 'getAllTraders']);
 Route::group([
     "middleware" => ["auth:api"]
-],  function(){
+], function () {
 
     Route::get("profile", [ApiController::class, "profile"]);
     Route::get("logout", [ApiController::class, "logout"]);
     Route::post("create-profile", [UserProfileController::class, "createProfile"]);
     Route::post("show-profile", [UserProfileController::class, "showProfile"]);
-    
+
 });
 
 
 Route::middleware('api')->group(function () {
     // Social Login
-    Route::get("/authenticate/redirect/{social}",[ApiController::class,"socialiteRedirect"])->name("socialite-redirect");
-    Route::get("/authenticate/callback/{social}",[ApiController::class,"callbacksocialite"])->name("socialite-callback");
- });
+    Route::get("/authenticate/redirect/{social}", [ApiController::class, "socialiteRedirect"])->name("socialite-redirect");
+    Route::get("/authenticate/callback/{social}", [ApiController::class, "callbacksocialite"])->name("socialite-callback");
+});
 
 
- Route::group([
+Route::group([
     "middleware" => ["auth:api"]
 ], function () {
     // Log individual user activity
@@ -115,20 +115,20 @@ Route::middleware('api')->group(function () {
 Route::group([
     "middleware" => ["auth:api"]
 ], function () {
-   // Store a new FAQ
-   Route::post('/faqs', [FaqController::class, 'store']);
-    
-   // Get all FAQs for authenticated user
-   Route::get('/faqs', [FaqController::class, 'index']);
-   
-   // Get a single FAQ
-   Route::get('/faqs/{id}', [FaqController::class, 'show']);
-   
-   // Update a FAQ
-   Route::PUT('/faqs/{id}', [FaqController::class, 'update']);
-   
-   // Delete a FAQ
-   Route::delete('/faqs/{id}', [FaqController::class, 'destroy']);
+    // Store a new FAQ
+    Route::post('/faqs', [FaqController::class, 'store']);
+
+    // Get all FAQs for authenticated user
+    Route::get('/faqs', [FaqController::class, 'index']);
+
+    // Get a single FAQ
+    Route::get('/faqs/{id}', [FaqController::class, 'show']);
+
+    // Update a FAQ
+    Route::PUT('/faqs/{id}', [FaqController::class, 'update']);
+
+    // Delete a FAQ
+    Route::delete('/faqs/{id}', [FaqController::class, 'destroy']);
 });
 
 Route::group([
@@ -186,9 +186,9 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     Route::post('all/my_packages_traders', [PackagesController::class, 'getMyPackagesTraders']);
     // Route to get all packages from all users
-   // Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
+    // Route::post('all/packages', [PackagesController::class, 'getAllPackages']);
 
-   // Fetch performance for a specific signal
+    // Fetch performance for a specific signal
     Route::get('/signal/{signalId}/performance', [SignalPerformanceController::class, 'show']);
 
     // Update performance for a specific signal
@@ -214,7 +214,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Delete a trade by ID
     Route::delete('trades/{trade}', [TradesController::class, 'destroy']);
 
-        // Route to insert a new trade journal entry
+    // Route to insert a new trade journal entry
     Route::post('/trade-journal', [TradesController::class, 'store_trade_journal'])->name('trade-journal.store');
 
     // Route to update an existing trade journal entry
@@ -250,10 +250,21 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/market-pairs/market/{market_id}', [MarketPairController::class, 'getByMarketId']);
     Route::get('/trading-markets', [TradingMarketController::class, 'index']);
     Route::get('/trading-markets/{id}', [TradingMarketController::class, 'show']);
-    Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
-    Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
+    // Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+    // Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
     Route::get('/trade-types', [TradeTypeController::class, 'index']);
     Route::get('/trade-types/{id}', [TradeTypeController::class, 'show']);
+    //payment gateways
+    Route::post('/send-notification', [FirebaseController::class, 'sendPushNotification']);
+    Route::get('/payment-methods', [PaymentMethodController::class, 'getPaymentMethods']);
+    Route::get('/banks', [PaymentMethodController::class, 'getBanks']);
+    Route::get('/wallets', [PaymentMethodController::class, 'getWallets']);
+    Route::get('/cryptocurrencies', [PaymentMethodController::class, 'getCryptocurrencies']);
+    Route::post('/user-payment-details', [PaymentMethodController::class, 'storeUserPaymentDetails']);
+    Route::get('/payment-user-methods', [PaymentMethodController::class, 'getAllPaymentMethods']);
+    Route::get('/payment-methods/list', [PaymentMethodController::class, 'getAllMethods']);
+
+
 });
 
 
@@ -290,4 +301,3 @@ Route::middleware(['firebase.auth'])->group(function () {
     // Add more protected routes here...
 });
 
-Route::post('/send-notification',[FirebaseController::class,'sendPushNotification']);
