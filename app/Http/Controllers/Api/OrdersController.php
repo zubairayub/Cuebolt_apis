@@ -140,7 +140,7 @@ class OrdersController extends Controller
                 $amountAfterCommission = $validated['amount'] - $commissionAmount;
 
                 // Add commission data to the validated data
-                $validated['commission_percentage'] = $commission->percentage;
+                
                 $validated['commission_amount'] = $commissionAmount;
                 $validated['amount_after_commission'] = $amountAfterCommission;
             }

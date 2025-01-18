@@ -35,164 +35,172 @@ class ApiController extends Controller
 {
 
     public function register(Request $request)
-{
-    try {
-        // Custom error messages
-        $messages = [
-            'username.regex' => 'Spaces are not allowed in the username.',
-        ];
+    {
+        try {
+            // Custom error messages
+            $messages = [
+                'username.regex' => 'Spaces are not allowed in the username.',
+            ];
 
-        // Validate request inputs
-        $validated = $request->validate([
-            'username' => [
-                'nullable',
-                'string',
-                'max:255',
-                'unique:users',
-                'regex:/^\S*$/u' // No spaces allowed
-            ],
-            'email' => 'nullable|string|email|max:255|unique:users',
-            'phone' => [
-                'nullable',
-                'string',
-                'unique:users',
-                'regex:/^\+?[0-9]{10,15}$/', // 10-15 digits, optional '+'
-            ],
-            'password' => 'nullable|string|confirmed|min:8',
-            'fcm_token' => 'nullable|string|max:255',
-            'type' => 'nullable|string|max:255',
-            'facebook_id' => 'nullable|string|max:255|unique:users',
-            'google_id' => 'nullable|string|max:255|unique:users',
-        ], $messages);
+            // Validate request inputs
+            $validated = $request->validate([
+                'username' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                    'unique:users',
+                    'regex:/^\S*$/u' // No spaces allowed
+                ],
+                'email' => 'nullable|string|email|max:255|unique:users',
+                'phone' => [
+                    'nullable',
+                    'string',
+                    'unique:users',
+                    'regex:/^\+?[0-9]{10,15}$/', // 10-15 digits, optional '+'
+                ],
+                'password' => 'nullable|string|confirmed|min:8',
+                'fcm_token' => 'nullable|string|max:255',
+                'type' => 'nullable|string|max:255',
+                'facebook_id' => 'nullable|string|max:255|unique:users',
+                'google_id' => 'nullable|string|max:255|unique:users',
+            ], $messages);
 
-        // Ensure either email or phone is provided
-        if (empty($validated['email']) && empty($validated['phone'])) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Either email or phone number is required.',
-            ], 422);
-        }
-
-        // Prepend "+" to phone number if missing
-        if (!empty($validated['phone']) && substr($validated['phone'], 0, 1) !== '+') {
-            $validated['phone'] = '+' . $validated['phone'];
-        }
-
-        // Assign role or default to 'user'
-        $role = $request->input('role', 'user');
-        $roleId = Role::where('name', $role)->value('id') ?? Role::where('name', 'user')->value('id');
-
-        // Generate OTP
-        $otp = rand(100000, 999999);
-
-        // Handle password based on registration type
-        if (in_array($validated['type'], ['google', 'facebook'])) {
-            $password = bcrypt(Str::random(12)); // Random password for social registration
-        } else {
-            if (empty($validated['password'])) {
+            // Ensure either email or phone is provided
+            if (empty($validated['email']) && empty($validated['phone'])) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Password is required.',
+                    'message' => 'Either email or phone number is required.',
                 ], 422);
             }
-            $password = bcrypt($validated['password']);
+
+            // Prepend "+" to phone number if missing
+            if (!empty($validated['phone']) && substr($validated['phone'], 0, 1) !== '+') {
+                $validated['phone'] = '+' . $validated['phone'];
+            }
+
+            // Assign role or default to 'user'
+            $role = $request->input('role', 'user');
+            $roleId = Role::where('name', $role)->value('id') ?? Role::where('name', 'user')->value('id');
+
+            // Generate OTP
+            $otp = rand(100000, 999999);
+
+            // Handle password based on registration type
+            if (in_array($validated['type'], ['google', 'facebook'])) {
+                $password = bcrypt(Str::random(12)); // Random password for social registration
+            } else {
+                if (empty($validated['password'])) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Password is required.',
+                    ], 422);
+                }
+                $password = bcrypt($validated['password']);
+            }
+
+            // Create user
+            $user = User::create([
+                'username' => $validated['username'] ?? $this->generateUniqueUsername(),
+                'email' => $validated['email'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'password' => $password,
+                'role_id' => $roleId,
+                'otp' => $otp,
+                'fcm_token' => $validated['fcm_token'] ?? null,
+                'facebook_id' => $validated['facebook_id'] ?? null,
+                'google_id' => $validated['google_id'] ?? null,
+            ]);
+
+            // Send OTP (if email is provided)
+            if ($user->email) {
+                // Uncomment to enable mail functionality
+                // Mail::to($user->email)->send(new OtpMail($otp));
+            }
+
+            // Create user profile
+            $profileController = new UserProfileController();
+            $profileController->createProfile(new Request(), $user->id);
+
+            // Optionally send FCM notification
+            if ($user->fcm_token) {
+                $title = "Welcome to Cuebolt";
+                $body = "Your only Trading Marketplace";
+                $type = "Register";
+                $data = [];
+                // Uncomment to enable push notification functionality
+                // send_push_notification($user->fcm_token, $title, $body, $data, $type);
+            }
+
+            //register_user_firestore($user->id,$user->username,$user->email,"url");
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User registered successfully. Please verify the OTP sent to your email.',
+                'data' => [
+                    'user_id' => $user->id,
+                    'username' => $user->username,
+                    'otp' => $user->otp,
+                ],
+            ], 201);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle database errors
+            return response()->json([
+                'status' => false,
+                'message' => 'Database error occurred during registration.',
+                'error' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            // Handle generic errors
+            return response()->json([
+                'status' => false,
+                'message' => 'An unexpected error occurred.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    function generateUniqueUsername($baseUsername = null, $socialId = null)
+    {
+        // Default cool, niche-related usernames if baseUsername is null
+        $defaultUsernames = [
+            'TradeProX',
+            'SignalAce',
+            'CoinWhiz',
+            'BlockSage',
+            'CryptoNinja',
+            'TradePulse',
+            'SignalMaverick',
+            'CoinSeeker',
+            'CryptoKing',
+            'SatoshiMaster'
+        ];
+
+        // If base username is not provided, pick a random one from the default list
+        if (!$baseUsername) {
+            $baseUsername = $defaultUsernames[array_rand($defaultUsernames)];
         }
 
-        // Create user
-        $user = User::create([
-            'username' => $validated['username'] ?? $this->generateUniqueUsername(),
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'password' => $password,
-            'role_id' => $roleId,
-            'otp' => $otp,
-            'fcm_token' => $validated['fcm_token'] ?? null,
-            'facebook_id' => $validated['facebook_id'] ?? null,
-            'google_id' => $validated['google_id'] ?? null,
-        ]);
+        // If social ID is null, we'll just generate a username based on the baseUsername
+        $username = preg_replace('/\s+/', '_', $baseUsername); // Replace spaces with underscores
 
-        // Send OTP (if email is provided)
-        if ($user->email) {
-            // Uncomment to enable mail functionality
-            // Mail::to($user->email)->send(new OtpMail($otp));
+        // If socialId is provided, hash it to ensure uniqueness, otherwise just use the base username
+        if ($socialId) {
+            $hashedUsername = substr(md5($username . $socialId), 0, 8);
+        } else {
+            $hashedUsername = substr(md5($username), 0, 8); // Only hash the baseUsername
         }
 
-        // Create user profile
-        $profileController = new UserProfileController();
-        $profileController->createProfile(new Request(), $user->id);
+        // Combine the base username with the hash
+        $finalUsername = $username . '_' . $hashedUsername;
 
-        // Optionally send FCM notification
-        if ($user->fcm_token) {
-            $title = "Welcome to Cuebolt";
-            $body = "Your only Trading Marketplace";
-            $type = "Register";
-            $data = [];
-            // Uncomment to enable push notification functionality
-            // send_push_notification($user->fcm_token, $title, $body, $data, $type);
+        // Ensure the final username is unique in the database
+        while (User::where('username', $finalUsername)->exists()) {
+            $finalUsername = $username . '_' . $hashedUsername . rand(1, 99); // Append a number if the username exists
         }
 
-        //register_user_firestore($user->id,$user->username,$user->email,"url");
-
-        return response()->json([
-            'status' => true,
-            'message' => 'User registered successfully. Please verify the OTP sent to your email.',
-            'data' => [
-                'user_id' => $user->id,
-                'username' => $user->username,
-                'otp' => $user->otp,
-            ],
-        ], 201);
-    } catch (\Illuminate\Database\QueryException $e) {
-        // Handle database errors
-        return response()->json([
-            'status' => false,
-            'message' => 'Database error occurred during registration.',
-            'error' => $e->getMessage(),
-        ], 500);
-    } catch (\Exception $e) {
-        // Handle generic errors
-        return response()->json([
-            'status' => false,
-            'message' => 'An unexpected error occurred.',
-            'error' => $e->getMessage(),
-        ], 500);
+        return $finalUsername;
     }
-}
-
-
-function generateUniqueUsername($baseUsername = null, $socialId = null)
-{
-    // Default cool, niche-related usernames if baseUsername is null
-    $defaultUsernames = [
-        'TradeProX', 'SignalAce', 'CoinWhiz', 'BlockSage', 'CryptoNinja', 
-        'TradePulse', 'SignalMaverick', 'CoinSeeker', 'CryptoKing', 'SatoshiMaster'
-    ];
-
-    // If base username is not provided, pick a random one from the default list
-    if (!$baseUsername) {
-        $baseUsername = $defaultUsernames[array_rand($defaultUsernames)];
-    }
-
-    // If social ID is null, we'll just generate a username based on the baseUsername
-    $username = preg_replace('/\s+/', '_', $baseUsername); // Replace spaces with underscores
-
-    // If socialId is provided, hash it to ensure uniqueness, otherwise just use the base username
-    if ($socialId) {
-        $hashedUsername = substr(md5($username . $socialId), 0, 8);
-    } else {
-        $hashedUsername = substr(md5($username), 0, 8); // Only hash the baseUsername
-    }
-
-    // Combine the base username with the hash
-    $finalUsername = $username . '_' . $hashedUsername;
-
-    // Ensure the final username is unique in the database
-    while (User::where('username', $finalUsername)->exists()) {
-        $finalUsername = $username . '_' . $hashedUsername . rand(1, 99); // Append a number if the username exists
-    }
-
-    return $finalUsername;
-}
 
 
 
@@ -503,7 +511,7 @@ function generateUniqueUsername($baseUsername = null, $socialId = null)
     //         $userQuery->orWhere('google_id', $request->google_id);
     //     }
 
-       
+
     //     // Check if the user exists and password matches
     //     if ($user && (Hash::check($request->password, $user->password) || $request->filled('facebook_id') || $request->filled('google_id'))) {
     //         // Create an authentication token for the user
@@ -519,7 +527,7 @@ function generateUniqueUsername($baseUsername = null, $socialId = null)
     //             // Update FCM token in the users table if it's not null
     //             $user->update(['fcm_token' => $request->fcm_token]);
     //         }
-          
+
     //         return response()->json([
     //             'status' => true,
     //             'message' => 'Login Successful',
@@ -543,87 +551,89 @@ function generateUniqueUsername($baseUsername = null, $socialId = null)
 
 
     public function login(Request $request)
-{
-    // Validate incoming request
-    $validated = $request->validate([
-        'login' => 'nullable|string|max:255',  // Accepts email, username, or phone
-        'password' => 'nullable|string|min:8|max:255',
-        'facebook_id' => 'nullable|string|max:255',
-        'google_id' => 'nullable|string|max:255',
-        'fcm_token' => 'nullable|string|max:255',
-    ], [
-        'login.max' => 'The login field must not exceed 255 characters.',
-        'password.min' => 'The password must be at least 8 characters.',
-    ]);
+    {
+        // Validate incoming request
+        $validated = $request->validate([
+            'login' => 'nullable|string|max:255',  // Accepts email, username, or phone
+            'password' => 'nullable|string|min:8|max:255',
+            'facebook_id' => 'nullable|string|max:255',
+            'google_id' => 'nullable|string|max:255',
+            'fcm_token' => 'nullable|string|max:255',
+        ], [
+            'login.max' => 'The login field must not exceed 255 characters.',
+            'password.min' => 'The password must be at least 8 characters.',
+        ]);
 
-    try {
-        // Build the user query dynamically
-        $userQuery = User::query();
+        try {
+            // Build the user query dynamically
+            $userQuery = User::query();
 
-        if (!empty($validated['login'])) {
-            $userQuery->where(function ($query) use ($validated) {
-                $query->where('email', $validated['login'])
-                      ->orWhere('username', $validated['login'])
-                      ->orWhere('phone', $validated['login']);
-            });
-        }
-
-        if (!empty($validated['facebook_id'])) {
-            $userQuery->orWhere('facebook_id', $validated['facebook_id']);
-        }
-
-        if (!empty($validated['google_id'])) {
-            $userQuery->orWhere('google_id', $validated['google_id']);
-        }
-
-        // Retrieve the user
-        $user = $userQuery->first();
-
-        // Validate user and credentials
-        if ($user && (
-            (!empty($validated['password']) && Hash::check($validated['password'], $user->password)) ||
-            $request->filled('facebook_id') ||
-            $request->filled('google_id')
-        )) {
-            // Generate authentication token
-            $token = $user->createToken('UserToken-' . $user->id)->accessToken;
-
-            // Register user device asynchronously
-            dispatch(function () use ($user, $token) {
-                getUserDevice($user, $user->tokens()->latest()->first()->id);
-            });
-
-            // Update FCM token if provided
-            if ($request->filled('fcm_token')) {
-                $user->update(['fcm_token' => $validated['fcm_token']]);
+            if (!empty($validated['login'])) {
+                $userQuery->where(function ($query) use ($validated) {
+                    $query->where('email', $validated['login'])
+                        ->orWhere('username', $validated['login'])
+                        ->orWhere('phone', $validated['login']);
+                });
             }
 
-            // Successful response
+            if (!empty($validated['facebook_id'])) {
+                $userQuery->orWhere('facebook_id', $validated['facebook_id']);
+            }
+
+            if (!empty($validated['google_id'])) {
+                $userQuery->orWhere('google_id', $validated['google_id']);
+            }
+
+            // Retrieve the user
+            $user = $userQuery->first();
+
+            // Validate user and credentials
+            if (
+                $user && (
+                    (!empty($validated['password']) && Hash::check($validated['password'], $user->password)) ||
+                    $request->filled('facebook_id') ||
+                    $request->filled('google_id')
+                )
+            ) {
+                // Generate authentication token
+                $token = $user->createToken('UserToken-' . $user->id)->accessToken;
+
+                // Register user device asynchronously
+                dispatch(function () use ($user, $token) {
+                    getUserDevice($user, $user->tokens()->latest()->first()->id);
+                });
+
+                // Update FCM token if provided
+                if ($request->filled('fcm_token')) {
+                    $user->update(['fcm_token' => $validated['fcm_token']]);
+                }
+
+                // Successful response
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Login successful',
+                    'data' => [
+                        'user' => $user,
+                        'token' => $token,
+                    ],
+                ], 200);
+            }
+
+            // Invalid credentials response
             return response()->json([
-                'status' => true,
-                'message' => 'Login successful',
-                'data' => [
-                    'user' => $user,
-                    'token' => $token,
-                ],
-            ], 200);
+                'status' => false,
+                'message' => 'Invalid login credentials',
+            ], 401);
+
+        } catch (\Throwable $e) {
+            // Handle unexpected errors
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred during login',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Invalid credentials response
-        return response()->json([
-            'status' => false,
-            'message' => 'Invalid login credentials',
-        ], 401);
-
-    } catch (\Throwable $e) {
-        // Handle unexpected errors
-        return response()->json([
-            'status' => false,
-            'message' => 'An error occurred during login',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
 

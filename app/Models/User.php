@@ -69,12 +69,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Trade::class);
     }
- 
+
     public function reviews()
     {
         return $this->hasMany(UserReview::class, 'trader_id');
     }
-    
+
     public function faqs()
     {
         return $this->hasMany(UserFaq::class); // Assuming a User has many FAQs
@@ -83,6 +83,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
-   
-    
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+
 }

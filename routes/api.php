@@ -269,6 +269,10 @@ Route::middleware('auth:api')->group(function () {
     // Route for updating payment status
     Route::post('/process-payment', [PaymentMethodController::class, 'makePayment']);
 
+    Route::post('/notifications/mark-seen', [FirebaseController::class, 'markNotificationAsSeen']);
+    Route::get('/notifications', [FirebaseController::class, 'getUserNotifications']);
+
+
 
 
 });

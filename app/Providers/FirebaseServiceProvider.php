@@ -6,13 +6,8 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Log;
-use Kreait\Firebase\Exception\AuthException;
-use Kreait\Firebase\Exception\FirebaseException;
-use Kreait\Firebase\Firestore;
-use Google\Cloud\Firestore\FirestoreClient;
-use Kreait\Firebase\Util\JSON;
-use App\Models\User; // Import User model at the top
-use App\Models\UserProfile; // Import UserProfile model to get profile data
+use App\Models\Notifications;
+use App\Models\UserNotification;
 
 class FirebaseServiceProvider extends ServiceProvider
 {
@@ -41,7 +36,7 @@ class FirebaseServiceProvider extends ServiceProvider
         //$this->firestore = $this->factory->createFirestore(); // Firestore initialization
     }
 
-    public function sendNotification(array $tokens, $title, $body, $data = [], $type)
+    public function sendNotification(array $tokens, $title, $body, $data = [], $type, $userIds)
     {
         // Split tokens into chunks of 500
         $tokenChunks = array_chunk($tokens, 500);
@@ -54,6 +49,22 @@ class FirebaseServiceProvider extends ServiceProvider
             try {
                 // Send a multicast notification to the current chunk
                 $response = $this->messaging->sendMulticast($message, $chunk);
+                $loggedInUser = auth()->user();
+                $notification = Notifications::create([
+                    'title' => $title,
+                    'body' => $body,
+                    'data' => $data,
+                    'type' => $type,
+                    'sent_by' => $loggedInUser->id,
+                ]);
+
+                foreach ($userIds as $userId) {
+                    UserNotification::create([
+                        'user_id' => $userId,
+                        'notification_id' => $notification->id,
+                        'seen' => false,
+                    ]);
+                }
 
                 Log::channel('notification_logs')->info('Notification sent successfully', [
                     'Token' => $chunk,

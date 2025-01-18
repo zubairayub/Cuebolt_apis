@@ -125,24 +125,54 @@ class PaymentMethodController extends Controller
     public function getAllMethods(Request $request)
     {
         try {
-            // Fetch all payment methods from the database
-            $paymentMethods = PaymentMethod::all();
+            // Fetch data from all tables
+$paymentMethods = PaymentMethod::all(['id', 'method_name']);
+$wallets = Wallet::all();
+$banks = Bank::all();
+$cryptocurrencies = Cryptocurrency::all();
 
-            // Group the payment methods by 'method_name' (treating it as a type)
-            $groupedMethods = $paymentMethods->groupBy('method_name');
+// Combine and format the results
+$result = collect([
+    [
+        'type' => 'payment_methods',
+        'methods' => $paymentMethods->map(function ($method) {
+            return [
+                'id' => $method->id,
+                'name' => $method->method_name,
+            ];
+        }),
+    ],
+    [
+        'type' => 'wallets',
+        'methods' => $wallets->map(function ($wallet) {
+            return [
+                'id' => $wallet->id,
+                'name' => $wallet->name,
+            ];
+        }),
+    ],
+    [
+        'type' => 'banks',
+        'methods' => $banks->map(function ($bank) {
+            return [
+                'id' => $bank->id,
+                'name' => $bank->name,
+                'code' => $bank->code,
+            ];
+        }),
+    ],
+    [
+        'type' => 'cryptocurrencies',
+        'methods' => $cryptocurrencies->map(function ($crypto) {
+            return [
+                'id' => $crypto->id,
+                'name' => $crypto->name,
+                'network' => $crypto->network,
+            ];
+        }),
+    ],
+]);
 
-            // Transform the grouped data for API response
-            $result = $groupedMethods->map(function ($methods, $name) {
-                return [
-                    'type' => $name,  // Use the method_name as the type
-                    'methods' => $methods->map(function ($method) {
-                        return [
-                            'id' => $method->id,
-                            'name' => $method->method_name,  // Correct column name
-                        ];
-                    }),
-                ];
-            })->values();
 
             // Return the payment methods
             return response()->json([

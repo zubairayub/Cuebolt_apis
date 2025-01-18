@@ -373,13 +373,27 @@ class TradesController extends Controller
             }
 
             // Step 5: Send Push Notifications
-            $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
+            // $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
+            //     ->where('order_status_id', 2) // Only orders with status 2
+            //     ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
+            //     ->pluck('user_id'))
+            //     ->whereNotNull('fcm_token')
+            //     ->pluck('fcm_token'); // Get all the FCM tokens
+
+            $userIds = Order::where('package_id', $validated['package_id'])
                 ->where('order_status_id', 2) // Only orders with status 2
                 ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
-                ->pluck('user_id'))
-                ->whereNotNull('fcm_token')
-                ->pluck('fcm_token'); // Get all the FCM tokens
+                ->pluck('user_id'); // Get user IDs
 
+            // Step 2: Fetch users with valid FCM tokens and their IDs
+            $usersWithTokens = User::whereIn('id', $userIds)
+                ->whereNotNull('fcm_token') // Only users with valid FCM tokens
+                ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
+
+            // Step 3: Extract tokens and user IDs separately if needed
+            $tokens = $usersWithTokens->pluck('fcm_token');
+            $validUserIds = $usersWithTokens->pluck('id');
+            // dd($tokens);
             if ($tokens->isNotEmpty()) {
 
                 // Step 1: Prepare button data for the notification
@@ -421,7 +435,8 @@ class TradesController extends Controller
                         'label' => $label,    // Pass the button label
                         'url' => $url         // Pass the URL link for the button
                     ],
-                    'trade_notification'
+                    type: 'trade_notification',
+                    userIds: $validUserIds->toArray(),
                 );
             }
 

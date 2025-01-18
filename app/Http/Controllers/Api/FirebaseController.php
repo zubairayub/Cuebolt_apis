@@ -6,6 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Providers\FirebaseServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\Auth;
+
+
+
 
 class FirebaseController extends Controller
 {
@@ -25,6 +30,7 @@ class FirebaseController extends Controller
             'title' => 'required|string',
             'body' => 'required|string',
             'data' => 'nullable|array',
+            'userIds' => 'required|array',  // Updated to accept an array of tokens
         ]);
 
         // Extract the input values
@@ -32,6 +38,8 @@ class FirebaseController extends Controller
         $title = $request->input('title');
         $body = $request->input('body');
         $data = $request->input('data');
+        $userIds = $request->input('userIds');
+        ;
 
         try {
             // Assuming your service method is sending the notification
@@ -40,8 +48,8 @@ class FirebaseController extends Controller
 
             // Check if tokens exist and loop through them to send notifications
 
-            send_push_notification($tokens, $title, $body, $data, $type);  // Sending notification for each token
-           //register_user_firestore( $title);
+            send_push_notification($tokens, $title, $body, $data, $type, $userIds);  // Sending notification for each token
+            //register_user_firestore( $title);
 
             // Return success response
             return [
@@ -58,6 +66,7 @@ class FirebaseController extends Controller
             return response()->json(['message' => 'Error sending notification', 'error' => $e->getMessage()], 500);
         }
     }
+
 
 
 
@@ -128,5 +137,59 @@ class FirebaseController extends Controller
     //     }
     // }
 
+
+
+
+    public function markNotificationAsSeen(Request $request)
+    {
+        try {
+            // Get the user ID from the authenticated user
+            $userId = Auth::id(); // Get the authenticated user's ID
+
+            // Get the notification ID from the request
+            $notificationId = $request->input('notification_id'); // Make sure the notification_id is passed in the request
+
+            // Check if the user and notification exist in the UserNotification table
+            $userNotification = UserNotification::where('user_id', $userId)
+                ->where('notification_id', $notificationId)
+                ->first();
+
+            // If notification exists and hasn't been marked as seen, update it
+            if ($userNotification && !$userNotification->seen) {
+                $userNotification->update([
+                    'seen' => true,
+                    'seen_at' => now(),
+                ]);
+            }
+
+            return response()->json(['message' => 'Notification marked as seen.']);
+        } catch (\Exception $e) {
+            Log::error('Failed to mark notification as seen: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to mark notification as seen'], 500);
+        }
+    }
+
+
+    public function getUserNotifications()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Fetch notifications for the authenticated user
+            return UserNotification::where('user_id', $user->id)
+                ->with(['notification.sender']) // Include sender details
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } catch (\Exception $e) {
+            // Log the error message
+            Log::error('Failed to fetch notifications: ' . $e->getMessage());
+
+            // Return an error response
+            return response()->json(['error' => 'Failed to fetch notifications'], 500);
+        }
+    }
 }
 // public function sendFcmNotification(Request $request)
+
+
