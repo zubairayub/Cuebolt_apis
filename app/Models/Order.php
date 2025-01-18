@@ -18,6 +18,9 @@ class Order extends Model
         'auto_renew',
         'payment_method_id',
         'order_status_id',
+        'commission_id',
+        'commission_amount',
+        'amount_after_commission',
     ];
 
     public function user()
@@ -38,6 +41,11 @@ class Order extends Model
     public function orderStatus()
     {
         return $this->belongsTo(OrderStatus::class);
+    }
+
+    public function commission()
+    {
+        return $this->belongsTo(Commission::class);
     }
 
     public function buyer()

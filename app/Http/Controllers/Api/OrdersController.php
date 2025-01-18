@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Models\Commission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -62,55 +63,56 @@ class OrdersController extends Controller
                 'amount' => 'required|numeric',
                 'expiry_date' => 'required|date',
                 'auto_renew' => 'boolean',
+                'commission_id' => 'required|exists:commissions,id',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Log validation errors and return to the client
             \Log::error('Validation failed during order creation:', $e->errors());
             return response()->json(['errors' => $e->errors()], 422);
         }
-    
+
         // Step 2: Authorization check - Ensure user is authenticated
         $user = auth()->user(); // Retrieve the authenticated user
-    
+
         if (!$user) {
             return response()->json(['error' => 'User is not authenticated.'], 401); // If not authenticated
         }
-    
+
         // Ensure that the user exists in the 'users' table
         if (!User::find($user->id)) {
             return response()->json(['error' => 'User not found in the database.'], 404);
         }
-    
+
         // Check if the user is authorized to create an order for this package
         try {
             $package = Package::findOrFail($validated['package_id']);
-    
+
             // Example of package ownership check (if needed)
             // if ($package->user_id !== $user->id) {
             //     return response()->json(['error' => 'Unauthorized to create order for this package'], 403);
             // }
-    
+
         } catch (Exception $e) {
             return response()->json(['error' => 'Package not found or authorization failed.', 'message' => $e->getMessage()], 500);
         }
-    
+
         // Step 3: Create the order
         try {
             // Attach the authenticated user to the order
             $validated['user_id'] = $user->id;  // Add the user ID to the validated data
-            
+
             // Step 4: Get the package associated with the order
             $package = Package::find($validated['package_id']);
 
             // Step 5: Ensure the user is purchasing a package from a different trader
             if ($package && $package->user_id !== $user->id) {
-               
-               
+
+
                 // Check if the user has already purchased any valid, non-expired package from this trader
                 $existingOrder = Order::where('package_id', $package->id)
-                                      ->where('user_id', $user->id)
-                                      ->where('expiry_date', '>', Carbon::now())  // Ensure it's not expired
-                                      ->first();
+                    ->where('user_id', $user->id)
+                    ->where('expiry_date', '>', Carbon::now())  // Ensure it's not expired
+                    ->first();
 
                 // If the user already has a non-expired order for this trader, skip incrementing
                 if (!$existingOrder) {
@@ -124,19 +126,35 @@ class OrdersController extends Controller
                     //  return response()->json(['message' => 'Order already exists for this trader with a valid package.'], 200);
                 }
 
-               
+
+            }
+
+            // Fetch the commission percentage for the order using commission_id
+            $commission = Commission::find($validated['commission_id']); // Ensure this is a valid commission object
+
+            if ($commission) {
+                // Calculate the commission amount
+                $commissionAmount = ($validated['amount'] * $commission->percentage) / 100;
+
+                // Subtract commission from amount
+                $amountAfterCommission = $validated['amount'] - $commissionAmount;
+
+                // Add commission data to the validated data
+                $validated['commission_percentage'] = $commission->percentage;
+                $validated['commission_amount'] = $commissionAmount;
+                $validated['amount_after_commission'] = $amountAfterCommission;
             }
 
             $order = Order::create($validated);
 
-             
-    
+
+
             return response()->json($order, 201);
         } catch (Exception $e) {
             return response()->json(['error' => 'Failed to create order', 'message' => $e->getMessage()], 500);
         }
     }
-    
+
 
     /**
      * Display the specified order.

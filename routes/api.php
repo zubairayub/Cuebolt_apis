@@ -263,6 +263,12 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/user-payment-details', [PaymentMethodController::class, 'storeUserPaymentDetails']);
     Route::get('/payment-user-methods', [PaymentMethodController::class, 'getAllPaymentMethods']);
     Route::get('/payment-methods/list', [PaymentMethodController::class, 'getAllMethods']);
+    // Route for requesting a payment
+    Route::post('/payment/request', [PaymentMethodController::class, 'requestPayment']);
+
+    // Route for updating payment status
+    Route::post('/process-payment', [PaymentMethodController::class, 'makePayment']);
+
 
 
 });

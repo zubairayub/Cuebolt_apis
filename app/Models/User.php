@@ -79,7 +79,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserFaq::class); // Assuming a User has many FAQs
     }
-
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
    
     
 }

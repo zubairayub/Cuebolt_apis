@@ -118,4 +118,9 @@ class Package extends Model
             }
         });
     }
+
+    public function trader()
+    {
+        return $this->belongsTo(User::class, 'user_id'); // Assuming 'user_id' in package table refers to the trader
+    }
 }
