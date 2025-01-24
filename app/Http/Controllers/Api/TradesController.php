@@ -373,79 +373,6 @@ class TradesController extends Controller
             }
 
             // Step 5: Send Push Notifications
-            // $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
-            //     ->where('order_status_id', 2) // Only orders with status 2
-            //     ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
-            //     ->pluck('user_id'))
-            //     ->whereNotNull('fcm_token')
-            //     ->pluck('fcm_token'); // Get all the FCM tokens
-
-            // $userIds = Order::where('package_id', $validated['package_id'])
-            //     ->where('order_status_id', 2) // Only orders with status 2
-            //     ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
-            //     ->pluck('user_id'); // Get user IDs
-            //updated notification
-            // Step 2: Fetch users with valid FCM tokens and their IDs
-            // $usersWithTokens = User::whereIn('id', $userIds)
-            //     ->whereNotNull('fcm_token') // Only users with valid FCM tokens
-            //     ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
-
-            // // Step 3: Extract tokens and user IDs separately if needed
-            // $tokens = $usersWithTokens->pluck('fcm_token');
-            // $validUserIds = $usersWithTokens->pluck('id');
-            // // dd($tokens);
-            // if ($tokens->isNotEmpty()) {
-                
-            //     // Step 1: Prepare button data for the notification
-            //     $action = 'follow_trade'; // Action name
-            //     $label = 'Follow Trade';  // Button label
-            //     $url = url("/trade/{$trade->id}"); // Link to the trade details
-            //     // Prepare the notification body
-            //     $package = Package::find($validated['package_id']);
-            //     $marketPair = MarketPair::find($validated['market_pair_id']);
-            //     $tradeType = TradeType::find($validated['trade_type_id']);
-            //     $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
-            //     $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
-            //     $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
-
-            //     $title = "{$ownerUsername} shared a new signal";
-
-            //     // Prepare the trade details for the notification
-            //     $body = "A new trade has been created for the package '{$package->name}'.\n\n";
-            //     $body .= "📈 Market Pair: {$marketPairName}\n";
-            //     $body .= "🔹 Trade Type: {$tradeTypeName}\n";
-            //     $body .= "💰 Entry Price: {$validated['entry_price']}\n";
-            //     $body .= "📊 Take Profit: " . implode(" / ", $validated['take_profit']) . "\n"; // Use implode to join array values
-            //     $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
-            //     $takeProfitString = is_array($validated['take_profit']) ? implode(" / ", array_map('strval', $validated['take_profit'])) : $validated['take_profit'];
-            //     dd($tokens);
-            //     send_push_notification(
-            //         $tokens->toArray(),
-            //         $title,
-            //         $body,
-            //         [
-            //             'trade_id' => $trade->id,
-            //             'package_id' => $validated['package_id'],
-            //             'market_pair_id' => $validated['market_pair_id'],
-            //             'trade_type_id' => $validated['trade_type_id'],
-            //             'entry_price' => $validated['entry_price'],
-            //             'take_profit' => $takeProfitString,
-            //             'stop_loss' => $validated['stop_loss'],
-            //             'type' => 'trade_notification',
-            //             'action' => $action,  // Pass the action name
-            //             'label' => $label,    // Pass the button label
-            //             'url' => $url         // Pass the URL link for the button
-            //         ],
-            //         type: 'trade_notification',
-            //         userIds: $validUserIds->toArray(),
-            //     );
-            // }
-            //end 
-
-
-
-              //notification
-            // Step 1: Get FCM tokens for users who ordered this package with valid expiry and status
             $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
                 ->where('order_status_id', 2) // Only orders with status 2
                 ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
@@ -453,48 +380,45 @@ class TradesController extends Controller
                 ->whereNotNull('fcm_token')
                 ->pluck('fcm_token'); // Get all the FCM tokens
 
-            // Step 2: Get package details
-            $package = Package::find($validated['package_id']);
-            $packageName = $package->name ?? 'Unknown Package';
+            $userIds = Order::where('package_id', $validated['package_id'])
+                ->where('order_status_id', 2) // Only orders with status 2
+                ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
+                ->pluck('user_id'); // Get user IDs
+            //updated notification
+           // Step 2: Fetch users with valid FCM tokens and their IDs
+            $usersWithTokens = User::whereIn('id', $userIds)
+                ->whereNotNull('fcm_token') // Only users with valid FCM tokens
+                ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
 
-            // Step 3: Get package owner's username
-            $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
-
-            // Step 4: Get the market pair name from the market_pairs table
-            $marketPair = MarketPair::find($validated['market_pair_id']);
-            $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
-
-            // Step 5: Get the trade type name from the trade_types table
-            $tradeType = TradeType::find($validated['trade_type_id']);
-            $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
-
-            // Step 6: Prepare the notification title
-            $title = "{$ownerUsername} shared a new signal with trade details";
-
-            // Step 7: Format the notification body for a user-friendly presentation
-
-            $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
-            $body .= "📈 Market Pair: {$marketPairName}\n";
-            $body .= "🔹 Trade Type: {$tradeTypeName}\n";
-            $body .= "💰 Entry Price: {$validated['entry_price']}\n";
-            $body .= "📊 Take Profit: ";
-
-            if ($takeProfit1 && $takeProfit2) {
-                // Show both take profit values
-                $body .= "{$takeProfit1} / {$takeProfit2}\n";
-            } elseif ($takeProfit1) {
-                // Show only the first take profit value if the second is not set
-                $body .= "{$takeProfit1}\n";
-            } else {
-                // Show the second take profit value if the first is not set
-                $body .= "{$takeProfit2}\n";
-            }
-
-            $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
-
-
-            // Step 8: Send notification if there are valid tokens
+            // Step 3: Extract tokens and user IDs separately if needed
+            $tokens = $usersWithTokens->pluck('fcm_token');
+            $validUserIds = $usersWithTokens->pluck('id');
+            // dd($tokens);
             if ($tokens->isNotEmpty()) {
+                
+                // Step 1: Prepare button data for the notification
+                $action = 'follow_trade'; // Action name
+                $label = 'Follow Trade';  // Button label
+                $url = url("/trade/{$trade->id}"); // Link to the trade details
+                // Prepare the notification body
+                $package = Package::find($validated['package_id']);
+                $marketPair = MarketPair::find($validated['market_pair_id']);
+                $tradeType = TradeType::find($validated['trade_type_id']);
+                $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
+                $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
+                $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
+
+                $title = "{$ownerUsername} shared a new signal";
+
+                // Prepare the trade details for the notification
+                $body = "A new trade has been created for the package '{$package->name}'.\n\n";
+                $body .= "📈 Market Pair: {$marketPairName}\n";
+                $body .= "🔹 Trade Type: {$tradeTypeName}\n";
+                $body .= "💰 Entry Price: {$validated['entry_price']}\n";
+                $body .= "📊 Take Profit: " . implode(" / ", $validated['take_profit']) . "\n"; // Use implode to join array values
+                $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
+                $takeProfitString = is_array($validated['take_profit']) ? implode(" / ", array_map('strval', $validated['take_profit'])) : $validated['take_profit'];
+                dd($tokens);
                 send_push_notification(
                     $tokens->toArray(),
                     $title,
@@ -505,13 +429,89 @@ class TradesController extends Controller
                         'market_pair_id' => $validated['market_pair_id'],
                         'trade_type_id' => $validated['trade_type_id'],
                         'entry_price' => $validated['entry_price'],
-                        'take_profit' => $validated['take_profit'],
+                        'take_profit' => $takeProfitString,
                         'stop_loss' => $validated['stop_loss'],
-                        'type' => 'trade_notification'
+                        'type' => 'trade_notification',
+                        'action' => $action,  // Pass the action name
+                        'label' => $label,    // Pass the button label
+                        'url' => $url         // Pass the URL link for the button
                     ],
-                    'trade_notification'
+                    type: 'trade_notification',
+                    userIds: $validUserIds->toArray(),
                 );
             }
+            //end 
+
+
+
+              //notification
+            // Step 1: Get FCM tokens for users who ordered this package with valid expiry and status
+            // $tokens = User::whereIn('id', Order::where('package_id', $validated['package_id'])
+            //     ->where('order_status_id', 2) // Only orders with status 2
+            //     ->where('expiry_date', '>=', now()) // Ensure expiry date hasn't passed
+            //     ->pluck('user_id'))
+            //     ->whereNotNull('fcm_token')
+            //     ->pluck('fcm_token'); // Get all the FCM tokens
+
+            // // Step 2: Get package details
+            // $package = Package::find($validated['package_id']);
+            // $packageName = $package->name ?? 'Unknown Package';
+
+            // // Step 3: Get package owner's username
+            // $ownerUsername = User::find($package->user_id)->username ?? 'Unknown Owner';
+
+            // // Step 4: Get the market pair name from the market_pairs table
+            // $marketPair = MarketPair::find($validated['market_pair_id']);
+            // $marketPairName = $marketPair ? "{$marketPair->base_currency}/{$marketPair->quote_currency}" : 'Unknown Market Pair';
+
+            // // Step 5: Get the trade type name from the trade_types table
+            // $tradeType = TradeType::find($validated['trade_type_id']);
+            // $tradeTypeName = $tradeType ? $tradeType->name : 'Unknown Trade Type';
+
+            // // Step 6: Prepare the notification title
+            // $title = "{$ownerUsername} shared a new signal with trade details";
+
+            // // Step 7: Format the notification body for a user-friendly presentation
+
+            // $body = "A new trade has been created for the package '{$packageName}' you ordered.\n\n";
+            // $body .= "📈 Market Pair: {$marketPairName}\n";
+            // $body .= "🔹 Trade Type: {$tradeTypeName}\n";
+            // $body .= "💰 Entry Price: {$validated['entry_price']}\n";
+            // $body .= "📊 Take Profit: ";
+
+            // if ($takeProfit1 && $takeProfit2) {
+            //     // Show both take profit values
+            //     $body .= "{$takeProfit1} / {$takeProfit2}\n";
+            // } elseif ($takeProfit1) {
+            //     // Show only the first take profit value if the second is not set
+            //     $body .= "{$takeProfit1}\n";
+            // } else {
+            //     // Show the second take profit value if the first is not set
+            //     $body .= "{$takeProfit2}\n";
+            // }
+
+            // $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
+
+
+            // // Step 8: Send notification if there are valid tokens
+            // if ($tokens->isNotEmpty()) {
+            //     send_push_notification(
+            //         $tokens->toArray(),
+            //         $title,
+            //         $body,
+            //         [
+            //             'trade_id' => $trade->id,
+            //             'package_id' => $validated['package_id'],
+            //             'market_pair_id' => $validated['market_pair_id'],
+            //             'trade_type_id' => $validated['trade_type_id'],
+            //             'entry_price' => $validated['entry_price'],
+            //             'take_profit' => $validated['take_profit'],
+            //             'stop_loss' => $validated['stop_loss'],
+            //             'type' => 'trade_notification'
+            //         ],
+            //         'trade_notification'
+            //     );
+            // }
 
 
             //end notification
