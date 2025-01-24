@@ -395,7 +395,7 @@ class TradesController extends Controller
             $validUserIds = $usersWithTokens->pluck('id');
             // dd($tokens);
             if ($tokens->isNotEmpty()) {
-
+                
                 // Step 1: Prepare button data for the notification
                 $action = 'follow_trade'; // Action name
                 $label = 'Follow Trade';  // Button label
@@ -418,6 +418,7 @@ class TradesController extends Controller
                 $body .= "📊 Take Profit: " . implode(" / ", $validated['take_profit']) . "\n"; // Use implode to join array values
                 $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
                 $takeProfitString = is_array($validated['take_profit']) ? implode(" / ", array_map('strval', $validated['take_profit'])) : $validated['take_profit'];
+                dd($tokens);
                 send_push_notification(
                     $tokens->toArray(),
                     $title,
