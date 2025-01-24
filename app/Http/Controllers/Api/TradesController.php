@@ -418,7 +418,7 @@ class TradesController extends Controller
                 $body .= "📊 Take Profit: " . implode(" / ", $validated['take_profit']) . "\n"; // Use implode to join array values
                 $body .= "📉 Stop Loss: {$validated['stop_loss']}\n";
                 $takeProfitString = is_array($validated['take_profit']) ? implode(" / ", array_map('strval', $validated['take_profit'])) : $validated['take_profit'];
-                dd($tokens);
+               // dd($tokens);
                 send_push_notification(
                     $tokens->toArray(),
                     $title,
