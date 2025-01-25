@@ -143,6 +143,7 @@ class OrdersController extends Controller
                 
                 $validated['commission_amount'] = $commissionAmount;
                 $validated['amount_after_commission'] = $amountAfterCommission;
+                $validated['stripe_subscription_id'] = $request->stripe_subscription_id;
             }
 
             $order = Order::create($validated);

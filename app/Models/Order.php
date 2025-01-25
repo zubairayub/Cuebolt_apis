@@ -21,6 +21,7 @@ class Order extends Model
         'commission_id',
         'commission_amount',
         'amount_after_commission',
+        'stripe_subscription_id',
     ];
 
     public function user()
