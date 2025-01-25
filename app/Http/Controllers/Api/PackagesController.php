@@ -33,7 +33,7 @@ class PackagesController extends Controller
             $limit = $request->input('limit', 10);
             
             // Initialize the query
-            $packagesQuery = Package::with([
+            $packagesQuery = Package::with(relations: [
                 'user:id,username',
                 'user.profile:id,user_id,profile_picture,rating,badge_id', // Include badge_id in the user profile
                 'user.profile.badge:id,description,icon', // Eager load badge details
@@ -44,7 +44,7 @@ class PackagesController extends Controller
                 'orders.buyer.profile:id,user_id,profile_picture',
                 'duration:id,duration_name' // Eager load duration details
             ])
-            ->select('id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture', 'user_id', 'duration_id')
+            ->select('id','stripe_product_id', 'stripe_price_id', 'name', 'description', 'signals_count', 'risk_reward_ratio', 'price', 'picture', 'user_id', 'duration_id')
             ->withCount(['orders as active_orders' => function ($query) {
                 $query->where('expiry_date', '>', Carbon::now());
             }])->orderBy('id', 'desc');
