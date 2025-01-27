@@ -237,6 +237,8 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     // Delete an order by ID
     Route::delete('orders/{order}', [OrdersController::class, 'destroy']);
+
+    Route::post('/create-payment-intent', [OrdersController::class, 'createPaymentIntent']);
 });
 
 

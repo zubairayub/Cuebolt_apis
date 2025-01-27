@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 
 class OrdersController extends Controller
@@ -270,6 +272,46 @@ class OrdersController extends Controller
         } catch (Exception $e) {
             // Step 5: Handle unexpected errors
             return response()->json(['error' => 'Failed to delete order', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
+
+    public function createPaymentIntent(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'package_id' => 'required|exists:packages,id',
+        ]);
+
+        try {
+            // Set Stripe API key
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            // Retrieve the package
+            $package = Package::findOrFail($request->package_id);
+
+            // Create a Payment Intent
+            $paymentIntent = PaymentIntent::create([
+                'amount' => $package->price * 100, // Amount in cents
+                'currency' => 'usd',
+                'metadata' => [
+                    'trader_id' => $package->user_id,
+                    'package_id' => $package->id,
+                ],
+            ]);
+
+            // Return the Payment Intent client secret
+            return response()->json([
+                'success' => true,
+                'client_secret' => $paymentIntent->client_secret,
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }
