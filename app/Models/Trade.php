@@ -26,7 +26,8 @@ class Trade extends Model
         'time_frame',
         'validity',
         'status',
-        'notes',  
+        'notes',
+        'rrr',  
     ];
 
     /**

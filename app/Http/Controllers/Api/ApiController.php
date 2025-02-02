@@ -132,6 +132,8 @@ class ApiController extends Controller
             }
 
             //register_user_firestore($user->id,$user->username,$user->email,"url");
+            // Generate Bearer Token
+            $token = $user->createToken('UserAuthToken')->accessToken;
 
             return response()->json([
                 'status' => true,
@@ -140,6 +142,7 @@ class ApiController extends Controller
                     'user_id' => $user->id,
                     'username' => $user->username,
                     'otp' => $user->otp,
+                    'token' => $token,
                 ],
             ], 201);
         } catch (\Illuminate\Database\QueryException $e) {
@@ -204,94 +207,97 @@ class ApiController extends Controller
 
 
 
-    // public function socialiteRedirect($social)
-    // {
+    public function socialiteRedirect($social)
+    {
 
-    //     return Socialite::driver($social)->stateless()->redirect();
-    // }
-
-
-    // public function callbacksocialite(Request $request, $social)
-    // {
-
-    //     try {
-    //         // Retrieve the user's information from the social platform (Facebook or Google)
-    //         $socialUser = Socialite::driver($social)->stateless()->user();
-
-    //         // Extract data from the social profile
-    //         $socialId = $socialUser->getId();
-    //         $name = $socialUser->getName();
-    //         $email = $socialUser->getEmail();
-    //         $phone = $socialUser->user['phone'] ?? null; // Assuming phone number might be available
-
-    //         // Check if the user exists based on social_id (Facebook or Google), email, or phone
-    //         $user = User::where(function ($query) use ($socialId, $email, $phone) {
-    //             $query->where('facebook_id', $socialId) // For Facebook login
-    //                 ->orWhere('google_id', $socialId) // For Google login
-    //                 ->orWhere('email', $email);
-    //             // Only include phone in the query if it's not empty or null
-    //             if (!empty($phone)) {
-    //                 $query->orWhere('phone', $phone);
-    //             }
-    //         })->first();
-
-    //         // Generate a unique username
-    //         $username = generateUniqueUsername($name, $socialId);
-
-    //         if ($user) {
-    //             // Prepare data for update
-    //             $updatedData = [
-    //                 'username' => $username !== $user->username ? $username : null, // Update only if changed
-    //                 'email' => $email !== $user->email ? $email : null, // Update email if changed
-    //                 'phone' => $phone !== $user->phone ? $phone : null, // Update phone if changed
-    //                 $social === 'facebook' ? 'facebook_id' : 'google_id' => $socialId, // Set appropriate social ID
-    //             ];
-
-    //             // Filter out null values
-    //             $updatedData = array_filter($updatedData);
-
-    //             // Update user if there's any data to change
-    //             if (!empty($updatedData)) {
-    //                 $user->update($updatedData);
-    //             }
-    //         } else {
-    //             // If the user doesn't exist, create a new one
-    //             $user = User::create([
-    //                 'username' => $username, // Use the generated unique username
-    //                 'email' => $email ?? null, // Use email if available
-    //                 'phone' => $phone ?? null, // Use phone if available
-    //                 'facebook_id' => $social === 'facebook' ? $socialId : null, // Store Facebook ID
-    //                 'google_id' => $social === 'google' ? $socialId : null, // Store Google ID
-    //                 'password' => bcrypt(Str::random(16)), // Generate a random password
-    //                 'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
-    //             ]);
+        return Socialite::driver($social)->stateless()->redirect();
+    }
 
 
-    //             // After user creation, create the user profile using the controller
-    //             $profileController = new UserProfileController();
-    //             $profileController->createProfile($user->id);
-    //         }
+    public function callbacksocialite(Request $request, $social)
+    {
 
-    //         // Generate a token for the user if needed (for API-based apps)
-    //         $token = $user->createToken('Social Login')->accessToken;
+        try {
+            // Retrieve the user's information from the social platform (Facebook or Google)
+            $socialUser = Socialite::driver($social)->stateless()->user();
 
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'User logged in successfully.',
-    //             'data' => [
-    //                 'user' => $user,
-    //                 'token' => $token,
-    //             ]
-    //         ], 200);
+            // Extract data from the social profile
+            $socialId = $socialUser->getId();
+            $name = $socialUser->getName();
+            $email = $socialUser->getEmail();
+            $phone = $socialUser->user['phone'] ?? null; // Assuming phone number might be available
 
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'An error occurred during Facebook login.',
-    //             'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
+            // Check if the user exists based on social_id (Facebook or Google), email, or phone
+            $user = User::where(function ($query) use ($socialId, $email, $phone) {
+                $query->where('facebook_id', $socialId) // For Facebook login
+                    ->orWhere('google_id', $socialId) // For Google login
+                    ->orWhere('email', $email);
+                // Only include phone in the query if it's not empty or null
+                if (!empty($phone)) {
+                    $query->orWhere('phone', $phone);
+                }
+            })->first();
+
+            // Generate a unique username
+            $username = generateUniqueUsername($name, $socialId);
+
+            if ($user) {
+                // Prepare data for update
+                $updatedData = [
+                    'username' => $username !== $user->username ? $username : null, // Update only if changed
+                    'email' => $email !== $user->email ? $email : null, // Update email if changed
+                    'phone' => $phone !== $user->phone ? $phone : null, // Update phone if changed
+                    $social === 'facebook' ? 'facebook_id' : 'google_id' => $socialId, // Set appropriate social ID
+                ];
+
+                // Filter out null values
+                $updatedData = array_filter($updatedData);
+
+                // Update user if there's any data to change
+                if (!empty($updatedData)) {
+                    $user->update($updatedData);
+                }
+            } else {
+                // If the user doesn't exist, create a new one
+                $user = User::create([
+                    'username' => $username, // Use the generated unique username
+                    'email' => $email ?? null, // Use email if available
+                    'phone' => $phone ?? null, // Use phone if available
+                    'facebook_id' => $social === 'facebook' ? $socialId : null, // Store Facebook ID
+                    'google_id' => $social === 'google' ? $socialId : null, // Store Google ID
+                    'password' => bcrypt(Str::random(16)), // Generate a random password
+                    'role_id' => Role::where('name', 'user')->value('id'), // Default role 'user'
+                ]);
+
+
+                // After user creation, create the user profile using the controller
+                $profileController = new UserProfileController();
+                $profileController->createProfile(new Request(), $user->id);
+                
+            }
+
+            // Generate a token for the user if needed (for API-based apps)
+            $token = $user->createToken('Social Login')->accessToken;
+            // Generate Bearer Token for the user
+            
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User logged in successfully.',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred during Facebook login.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 
@@ -452,9 +458,14 @@ class ApiController extends Controller
                     'email_verified_at' => now(), // Set email_verified_at to current timestamp
                 ]);
 
+                // Generate Bearer Token
+            $token = $user->createToken('UserAuthToken')->accessToken;
+
+
                 return response()->json([
                     'status' => true,
                     'message' => 'Email verified successfully.',
+                    'token'=> $token
                 ]);
             } catch (\Exception $e) {
                 // Log any exceptions for debugging

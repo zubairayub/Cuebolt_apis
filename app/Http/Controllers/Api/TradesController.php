@@ -310,6 +310,7 @@ class TradesController extends Controller
                 'time_frame' => 'required|string',
                 'validity' => 'required|string',
                 'status' => 'required|boolean',
+                'rrr' => 'nullable|string|max:255', // Added rrr field as nullable string
                 'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Image validation
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
