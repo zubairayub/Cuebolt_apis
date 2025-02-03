@@ -40,6 +40,10 @@ class Package extends Model
         'challenge_days',        // Nullable field
         'stripe_product_id',
         'stripe_price_id',
+        'profit_loss_percentage',
+        'win_percentage',
+        'loss_percentage',
+
     ];
 
     // Attributes to cast to specific data types

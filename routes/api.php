@@ -288,6 +288,7 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/trader/{traderProfileId}/unbookmark', [BookmarkController::class, 'unbookmarkTrader']);
 
     Route::post('/create-subscription', [SubscriptionController::class, 'createSubscription']);
+    Route::delete('/user/{userId}', [ApiController::class, 'deleteUser'])->name('user.delete');
 });
 // Route::get('/user', function (Request $request) {
 //     return $request->user();

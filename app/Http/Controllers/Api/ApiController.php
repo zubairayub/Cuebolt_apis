@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\UserProfileController;
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Gate;
 
 
 
@@ -886,5 +887,46 @@ class ApiController extends Controller
             'status' => true,
             'data' => $homeText,
         ]);
+    }
+
+
+    public function deleteUser($userId)
+    {
+        // Check if the user exists
+        $user = User::find($userId);
+        Log::info('Logged-in user role:', ['role' => auth()->user()->role]);
+
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found.'], 404);
+        }
+
+        try {
+            // Optionally, use Laravel's Gate to check if the user has permission to delete
+            if (Gate::denies('delete-user', $user)) {
+                return response()->json(['error' => 'Unauthorized.'], 403);
+            }
+
+            $user->packages->each(function ($package) {
+                $package->trades()->delete();  // Delete trades linked to each package
+            });
+            
+            // Delete user-related data first (if needed)
+            $user->profile()->delete();
+            $user->packages()->delete();
+           
+            $user->reviews()->delete();
+            $user->faqs()->delete();
+            $user->orders()->delete();
+            $user->notifications()->delete();
+
+            // Now delete the user
+            $user->delete();
+
+            return response()->json(['message' => 'User deleted successfully.'], 200);
+        } catch (\Exception $e) {
+            Log::error("Error deleting user: " . $e->getMessage());
+            return response()->json(['error' => 'An error occurred while deleting the user.'.$e->getMessage()], 500);
+        }
     }
 }
