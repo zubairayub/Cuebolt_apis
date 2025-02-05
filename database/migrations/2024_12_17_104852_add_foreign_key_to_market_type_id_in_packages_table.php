@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('packages', function (Blueprint $table) {
-             $table->foreign('market_type_id')
-                  ->references('id')->on('trading_markets')
-                  ->onDelete('cascade');  // You can also choose 'set null' if needed
+           // $table->foreignId('market_type_id')->constrained('trading_markets')->onDelete('cascade'); // Link to signals table
         });
+
+      
         
     }
 
@@ -25,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('packages', function (Blueprint $table) {
-            $table->dropForeign(['market_type_id']);
+           // $table->dropForeign(['market_type_id']);
         });
     }
 };
