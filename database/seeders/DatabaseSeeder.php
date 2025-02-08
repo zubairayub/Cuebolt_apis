@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             MarketPairsSeeder::class,
             OrderStatusesSeeder::class,
             PaymentMethodSeeder::class,
+            PlansTableSeeder::class,
+            TradeTypeSeeder::class,
            
         ]);
     }

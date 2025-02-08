@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\TraderDashboardController;
+use App\Http\Controllers\Api\UserDashboardController;
 use App\Http\Controllers\Api\SignalPerformanceController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\GroupController;
@@ -136,6 +137,7 @@ Route::group([
 ], function () {
     // Get Trader Dashboard Data
     Route::get('/trader/dashboard', [TraderDashboardController::class, 'showDashboard']);
+    Route::get('/user/dashboard', [UserDashboardController::class, 'showDashboard']);
 });
 
 
