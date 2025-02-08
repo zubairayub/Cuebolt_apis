@@ -17,6 +17,7 @@ class CountryCitySeeder extends Seeder
             ['name' => 'United States', 'code' => 'US'],
             ['name' => 'India', 'code' => 'IN'],
             ['name' => 'United Kingdom', 'code' => 'GB'],
+            ['name' => 'Pakistan', 'code' => 'PK'],
         ];
 
         foreach ($countries as $countryData) {
@@ -32,6 +33,13 @@ class CountryCitySeeder extends Seeder
             } elseif ($country->name == 'United Kingdom') {
                 City::create(['name' => 'London', 'country_id' => $country->id]);
                 City::create(['name' => 'Manchester', 'country_id' => $country->id]);
+            }
+            elseif ($country->name == 'Pakistan') {
+                City::create(['name' => 'Sindh', 'country_id' => $country->id]);
+                City::create(['name' => 'Islamabad', 'country_id' => $country->id]);
+                City::create(['name' => 'Punjab', 'country_id' => $country->id]);
+                City::create(['name' => 'KPK', 'country_id' => $country->id]);
+                City::create(['name' => 'Balochistan', 'country_id' => $country->id]);
             }
         }
     }

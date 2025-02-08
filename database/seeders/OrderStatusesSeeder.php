@@ -18,5 +18,7 @@ class OrderStatusesSeeder extends Seeder
         OrderStatus::create(['status_name' => 'Failed']);
         OrderStatus::create(['status_name' => 'Cancelled']);
         OrderStatus::create(['status_name' => 'Refund']);
+        OrderStatus::create(['status_name' => 'Trader-Paid']);
+        OrderStatus::create(['status_name' => 'Trader-Requested']);
     }
 }

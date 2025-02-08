@@ -15,9 +15,9 @@ class DurationsSeeder extends Seeder
     public function run()
     {
         $durations = [
-            ['duration_name' => 'Daily', 'duration_in_days' => 1],
-            ['duration_name' => 'Weekly', 'duration_in_days' => 7],
-            ['duration_name' => 'Monthly', 'duration_in_days' => 30],
+            ['duration_name' => 'Intra Day', 'duration_in_days' => 1],
+            ['duration_name' => 'Swing', 'duration_in_days' => 7],
+            ['duration_name' => 'Extra', 'duration_in_days' => 30],
             ['duration_name' => 'Yearly', 'duration_in_days' => 365],
             ['duration_name' => 'Bi-Yearly', 'duration_in_days' => 730],
         ];
