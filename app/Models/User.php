@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(Trade::class);
     }
 
+    public function trades()
+    {
+        return $this->hasManyThrough(Trade::class, Package::class, 'user_id', 'package_id');
+    }
+
     public function reviews()
     {
         return $this->hasMany(UserReview::class, 'trader_id');

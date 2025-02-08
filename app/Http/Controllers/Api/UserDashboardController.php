@@ -27,6 +27,7 @@ class UserDashboardController extends Controller
         $profile = $this->getUserProfile($user);
         $purchasedPackages = $this->getUserPurchasedPackages($user);
         $trades = $this->getUserTrades($user);
+        $orders = $this->getUserOrders($user);
 
         return response()->json([
             'profile_picture' => $profilePicture,
@@ -35,6 +36,7 @@ class UserDashboardController extends Controller
             'profile' => $profile,
             'purchased_packages' => $purchasedPackages,
             'trades' => $trades,
+            'orders' => $orders,
         ]);
     }
 
@@ -142,7 +144,42 @@ class UserDashboardController extends Controller
         });
     }
     
-    
+    private function getUserOrders($user)
+{
+    // Fetch user orders with package and payment details
+    $orders = Order::where('user_id', $user->id)
+        ->with(['package.trader'])
+        ->get();
+
+    return [
+        'total_orders' => $orders->count(),
+        'active_orders' => $orders->where('expiry_date', '>=', now())->map(function ($order) {
+            return [
+                'order_id' => $order->id,
+                'package_name' => $order->package->name ?? null,
+                'trader' => $order->package->trader->username ?? null,
+                'amount' => $order->amount,
+                'payment_method' => $order->paymentMethod->method_name,
+                'expiry_date' => $order->expiry_date,
+                'status' => 'Active',
+                
+            ];
+        }),
+        'expired_orders' => $orders->where('expiry_date', '<', now())->map(function ($order) {
+            return [
+                'order_id' => $order->id,
+                'package_name' => $order->package->name ?? null,
+                'trader' => $order->package->trader->username ?? null,
+                'amount' => $order->amount,
+                'payment_method' => $order->paymentMethod->method_name,
+                'expiry_date' => $order->expiry_date,
+                'status' => 'Expired',
+                
+            ];
+        }),
+    ];
+}
+
     
 
 }
