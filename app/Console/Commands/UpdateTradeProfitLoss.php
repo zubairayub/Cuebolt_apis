@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Trade;
 use App\Models\Package;
+use App\Models\SignalPerformance;
+
 
 class UpdateTradeProfitLoss extends Command
 {
@@ -191,6 +193,22 @@ class UpdateTradeProfitLoss extends Command
 
                         // Update the trade record with the calculated profit/loss
                         $trade->update(['profit_loss' => $profitLoss]);
+
+                        // Update the corresponding SignalPerformance record
+                        $signalPerformance = SignalPerformance::where('signal_id', $trade->id)->first();
+                        if ($signalPerformance) {
+                            $entryPrice_performance = (float) $signalPerformance->entry_price;
+
+                        // Calculate profit/loss percentage
+                        $profitLoss_performance = (($currentPrice - $entryPrice_performance) / $entryPrice_performance) * 100;
+                            $signalPerformance->update([
+                                'current_price' => $currentPrice,
+                                'profit_loss' => $profitLoss_performance,
+                            ]);
+                            Log::info("Updated SignalPerformance for Signal ID {$trade->id}: Current Price: {$currentPrice}, Profit/Loss: {$profitLoss}%");
+                        } else {
+                            Log::error("SignalPerformance record not found for Signal ID {$trade->id}");
+                        }
 
                         Log::info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
                     } else {
