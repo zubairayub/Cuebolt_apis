@@ -30,6 +30,7 @@ class User extends Authenticatable
         'fcm_token',
         'social_id',
         'stripe_customer_id',
+        'trading_capital',
     ];
 
     /**

@@ -83,6 +83,12 @@ class Package extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function activeOrders()
+{
+    return $this->hasMany(Order::class)->where('expires_at', '>', now());
+}
+
+
 
     public function trades()
     {
@@ -93,6 +99,12 @@ class Package extends Model
     {
         return $this->belongsTo(UserProfile::class);
     }
+
+    public function userProfilelink()
+{
+    return $this->hasOneThrough(UserProfile::class, User::class, 'id', 'user_id', 'user_id', 'id');
+}
+
 
       // Default picture accessor
       public function getPictureUrlAttribute()
