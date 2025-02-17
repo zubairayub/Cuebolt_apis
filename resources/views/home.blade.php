@@ -1,5 +1,91 @@
 @extends('layouts.app')
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 50;
+    }
 
+    .modal.show {
+        display: flex;
+    }
+</style>
+
+
+<div id="positionModal" class="modal items-center justify-center">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold">Position Calculator</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                <i class="lucide-x">X</i>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Capital & Risk Input -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Capital (USDT)</label>
+                    <input type="number" id="capital" value="10000"
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Risk (%)</label>
+                    <input type="number" id="riskPercentage" value="2"
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                </div>
+            </div>
+
+            <!-- Trade Levels -->
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Entry</label>
+                    <input type="number" id="entryPrice" readonly
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Stop Loss</label>
+                    <input type="number" id="stopLoss" readonly
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Take Profit</label>
+                    <input type="number" id="takeProfit" readonly
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-gray-700 rounded-lg p-4 space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-400">Risk Amount</div>
+                        <div class="text-lg font-bold text-white-500" id="riskAmount">$200.00</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-400">Position Size</div>
+                        <div class="text-lg font-bold text-white-500" id="positionSize">0.0047 BTC</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-400">Potential Loss</div>
+                        <div class="text-lg font-bold text-red-500" id="potentialLoss">-$200.00</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-400">Potential Profit</div>
+                        <div class="text-lg font-bold text-green-500" id="potentialProfit">$500.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @section('content')
     <!-- Hero Section -->
     <div class="bg-dark border-b border-gray-800">
@@ -96,8 +182,8 @@
 
                     <!-- Active Hours -->
                     <!-- <div class="text-sm text-gray-400 mb-6">
-                                                                                                                            <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
-                                                                                                                          </div> -->
+                                                                                                                                            <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
+                                                                                                                                          </div> -->
 
                     <!-- Price and Subscribers -->
                     <div class="flex justify-between items-center mb-6">
@@ -176,22 +262,26 @@
                     <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
                         <!-- Trader & Package Info -->
                         <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center">
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
-                  alt="John Smith"
-                  class="w-8 h-8 rounded-full mr-2"
-                />
-                <div>
-                  <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
-                  <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
-                </div>
-              </div>
-              <button class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-                
-                <span>Follow</span>
-              </button>
-            </div>
+                            <div class="flex items-center">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
+                                    alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
+                                <div>
+                                    <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
+                                    <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
+                                </div>
+                            </div>
+                            <!-- <button
+                                        class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                        <span>Follow</span>
+                                    </button> -->
+
+                            <button onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }})"
+                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+                                
+                                <span>Follow Trade</span>
+                            </button>
+                        </div>
 
                         <!-- Trade Details -->
                         <div class="space-y-3">
@@ -274,5 +364,47 @@
                 <!-- Additional signal cards would follow the same pattern -->
             </div>
         </div>
+        <script>
+      // Position Calculator Functions
+      function openPositionCalculator(entry, sl, tp) {
+        document.getElementById('entryPrice').value = entry;
+        document.getElementById('stopLoss').value = sl;
+        document.getElementById('takeProfit').value = tp;
+        document.getElementById('positionModal').classList.add('show');
+        calculatePosition();
+      }
 
+      function closeModal() {
+        document.getElementById('positionModal').classList.remove('show');
+      }
+
+      function calculatePosition() {
+        const capital = parseFloat(document.getElementById('capital').value);
+        const riskPercentage = parseFloat(document.getElementById('riskPercentage').value);
+        const entry = parseFloat(document.getElementById('entryPrice').value);
+        const sl = parseFloat(document.getElementById('stopLoss').value);
+        const tp = parseFloat(document.getElementById('takeProfit').value);
+
+        // Calculate risk amount
+        const riskAmount = capital * (riskPercentage / 100);
+        
+        // Calculate position size
+        const riskPerCoin = Math.abs(entry - sl);
+        const quantity = riskAmount / riskPerCoin;
+        
+        // Calculate potential profit/loss
+        const potentialLoss = quantity * (sl - entry);
+        const potentialProfit = quantity * (tp - entry);
+
+        // Update UI
+        document.getElementById('riskAmount').textContent = `$${riskAmount.toFixed(2)}`;
+        document.getElementById('positionSize').textContent = `${quantity.toFixed(4)} BTC`;
+        document.getElementById('potentialLoss').textContent = `$${Math.abs(potentialLoss).toFixed(2)}`;
+        document.getElementById('potentialProfit').textContent = `$${potentialProfit.toFixed(2)}`;
+      }
+
+      // Add event listeners for real-time calculations
+      document.getElementById('capital').addEventListener('input', calculatePosition);
+      document.getElementById('riskPercentage').addEventListener('input', calculatePosition);
+    </script>
 @endsection
