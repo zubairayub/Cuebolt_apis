@@ -41,12 +41,12 @@
         <div class="space-y-4">
             <!-- Capital & Risk Input -->
             <div class="grid grid-cols-2 gap-4">
-                <div>
+                <div style="display:none;">
                     <label class="block text-sm text-gray-400 mb-1">Signal ID</label>
                     <input type="number" id="signal_id" name="signal_id" value="10000"
                         class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
                 </div>
-                <div>
+                <div style="display:none;">
                     <label class="block text-sm text-gray-400 mb-1">User ID</label>
                     <input type="number" id="user_id" name="user_id" value="10000"
                         class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
