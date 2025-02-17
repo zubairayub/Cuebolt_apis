@@ -39,4 +39,21 @@
         </div>
     </footer>
 </body>
+<script>
+      // Mobile menu functions
+      function toggleMobileMenu() {
+        const mobileMenu = document.querySelector('.mobile-menu');
+        const overlay = document.getElementById('mobileMenuOverlay');
+        
+        mobileMenu.classList.toggle('show');
+        
+        if (mobileMenu.classList.contains('show')) {
+          overlay.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        } else {
+          overlay.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      }
+      </script>
 </html>

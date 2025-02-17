@@ -7,6 +7,8 @@
     <title>CueBolt - Trading Marketplace</title>
     <link rel="stylesheet" href="{{ asset(path: 'css/tailwind.min.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -20,6 +22,22 @@
             }
         }
     </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        lucide.createIcons();
+    });
+</script>
+
+    <style>
+/* Mobile menu styles */
+      .mobile-menu {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+      .mobile-menu.show {
+        transform: translateX(0);
+      }
+    </style>
     <link href="https://unpkg.com/lucide-css" rel="stylesheet">
     
 </head>
