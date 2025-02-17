@@ -33,29 +33,29 @@ class SignalPerformanceController extends Controller
             'entry_price' => 'required|numeric',
             'take_profit' => 'required|numeric',
             'stop_loss' => 'required|numeric',
-            'status' => 'required|string|in:active,hit_take_profit,hit_stop_loss', // Valid statuses
-
+            
         ]);
-
+    
+        // Find the trade based on the signal_id
         $trade = Trade::find($request->signal_id);
+    
         // Get the market_pair_id from the trade
-        $marketPairId = $trade->market_pair_id;  // Assuming `market_pair_id` is present in the trades table
-
+        $marketPairId = $trade->market_pair_id;
+    
         // Create a new record in the database
-        $performance = SignalPerformance::create([
+        SignalPerformance::create([
             'signal_id' => $request->signal_id,
             'user_id' => auth()->id(),
             'current_price' => $request->current_price,
             'entry_price' => $request->entry_price,
             'take_profit' => $request->take_profit,
             'stop_loss' => $request->stop_loss,
-            'status' => $request->status,
-            'market_pair_id' => $marketPairId,  
-
+            'status' => 'active',
+            'market_pair_id' => $marketPairId,
         ]);
-
-        // Return the created record
-        return response()->json($performance, 201);
+    
+        // Redirect back with a success message
+        return response()->json(['success' => true, 'message' => 'Signal performance recorded successfully!']);
     }
 
 

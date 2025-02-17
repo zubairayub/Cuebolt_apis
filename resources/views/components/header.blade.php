@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>CueBolt - Trading Marketplace</title>
     <link rel="stylesheet" href="{{ asset(path: 'css/tailwind.min.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,4 +21,5 @@
         }
     </script>
     <link href="https://unpkg.com/lucide-css" rel="stylesheet">
+    
 </head>

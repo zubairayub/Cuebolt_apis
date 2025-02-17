@@ -14,6 +14,18 @@
     .modal.show {
         display: flex;
     }
+
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        transform: translateY(150%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .toast.show {
+        transform: translateY(0);
+    }
 </style>
 
 
@@ -30,6 +42,16 @@
             <!-- Capital & Risk Input -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
+                    <label class="block text-sm text-gray-400 mb-1">Signal ID</label>
+                    <input type="number" id="signal_id" name="signal_id" value="10000"
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">User ID</label>
+                    <input type="number" id="user_id" name="user_id" value="10000"
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                </div>
+                <div>
                     <label class="block text-sm text-gray-400 mb-1">Capital (USDT)</label>
                     <input type="number" id="capital" value="10000"
                         class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
@@ -45,7 +67,7 @@
             <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm text-gray-400 mb-1">Entry</label>
-                    <input type="number" id="entryPrice" readonly
+                    <input type="number" name="entryPrice" id="entryPrice" readonly
                         class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
                 </div>
                 <div>
@@ -83,8 +105,24 @@
                     </div>
                 </div>
             </div>
+            <!-- Follow Trade Button -->
+            <button id="followTradeBtn" onclick="followTrade()"
+                class="w-full bg-yellow-500 text-gray-900 py-3 rounded-lg hover:bg-yellow-400 font-semibold transition-colors duration-300 flex items-center justify-center">
+                <i class="lucide-user-plus mr-2"></i>
+                Follow Trade
+            </button>
+            <div class="text-xs text-gray-400">
+                By following this trade, orders will be automatically placed with the calculated position size and risk
+                management parameters.
+            </div>
         </div>
     </div>
+</div>
+
+<!-- Success Toast -->
+<div id="successToast" class="toast bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
+    <i class="lucide-check-circle mr-2"></i>
+    <span>Trade followed successfully! Check your dashboard for updates.</span>
 </div>
 @section('content')
     <!-- Hero Section -->
@@ -182,8 +220,8 @@
 
                     <!-- Active Hours -->
                     <!-- <div class="text-sm text-gray-400 mb-6">
-                                                                                                                                            <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
-                                                                                                                                          </div> -->
+                                                                                                                                                                                                    <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
+                                                                                                                                                                                                  </div> -->
 
                     <!-- Price and Subscribers -->
                     <div class="flex justify-between items-center mb-6">
@@ -271,14 +309,15 @@
                                 </div>
                             </div>
                             <!-- <button
-                                        class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+                                                                                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
 
-                                        <span>Follow</span>
-                                    </button> -->
+                                                                                                <span>Follow</span>
+                                                                                            </button> -->
 
-                            <button onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }})"
+                            <button
+                                onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
                                 class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-                                
+
                                 <span>Follow Trade</span>
                             </button>
                         </div>
@@ -365,46 +404,113 @@
             </div>
         </div>
         <script>
-      // Position Calculator Functions
-      function openPositionCalculator(entry, sl, tp) {
-        document.getElementById('entryPrice').value = entry;
-        document.getElementById('stopLoss').value = sl;
-        document.getElementById('takeProfit').value = tp;
-        document.getElementById('positionModal').classList.add('show');
-        calculatePosition();
-      }
+            // Position Calculator Functions
+            function openPositionCalculator(entry, sl, tp, signal_id, user_id) {
+                document.getElementById('signal_id').value = signal_id;
+                document.getElementById('user_id').value = user_id;
+                document.getElementById('entryPrice').value = entry;
+                document.getElementById('stopLoss').value = sl;
+                document.getElementById('takeProfit').value = tp;
+                document.getElementById('positionModal').classList.add('show');
+                calculatePosition();
+            }
 
-      function closeModal() {
-        document.getElementById('positionModal').classList.remove('show');
-      }
+            function closeModal() {
+                document.getElementById('positionModal').classList.remove('show');
+            }
 
-      function calculatePosition() {
-        const capital = parseFloat(document.getElementById('capital').value);
-        const riskPercentage = parseFloat(document.getElementById('riskPercentage').value);
-        const entry = parseFloat(document.getElementById('entryPrice').value);
-        const sl = parseFloat(document.getElementById('stopLoss').value);
-        const tp = parseFloat(document.getElementById('takeProfit').value);
+            function calculatePosition() {
+                const capital = parseFloat(document.getElementById('capital').value);
+                const riskPercentage = parseFloat(document.getElementById('riskPercentage').value);
+                const entry = parseFloat(document.getElementById('entryPrice').value);
+                const sl = parseFloat(document.getElementById('stopLoss').value);
+                const tp = parseFloat(document.getElementById('takeProfit').value);
 
-        // Calculate risk amount
-        const riskAmount = capital * (riskPercentage / 100);
-        
-        // Calculate position size
-        const riskPerCoin = Math.abs(entry - sl);
-        const quantity = riskAmount / riskPerCoin;
-        
-        // Calculate potential profit/loss
-        const potentialLoss = quantity * (sl - entry);
-        const potentialProfit = quantity * (tp - entry);
+                // Calculate risk amount
+                const riskAmount = capital * (riskPercentage / 100);
 
-        // Update UI
-        document.getElementById('riskAmount').textContent = `$${riskAmount.toFixed(2)}`;
-        document.getElementById('positionSize').textContent = `${quantity.toFixed(4)} BTC`;
-        document.getElementById('potentialLoss').textContent = `$${Math.abs(potentialLoss).toFixed(2)}`;
-        document.getElementById('potentialProfit').textContent = `$${potentialProfit.toFixed(2)}`;
-      }
+                // Calculate position size
+                const riskPerCoin = Math.abs(entry - sl);
+                const quantity = riskAmount / riskPerCoin;
 
-      // Add event listeners for real-time calculations
-      document.getElementById('capital').addEventListener('input', calculatePosition);
-      document.getElementById('riskPercentage').addEventListener('input', calculatePosition);
-    </script>
+                // Calculate potential profit/loss
+                const potentialLoss = quantity * (sl - entry);
+                const potentialProfit = quantity * (tp - entry);
+
+                // Update UI
+                document.getElementById('riskAmount').textContent = `$${riskAmount.toFixed(2)}`;
+                document.getElementById('positionSize').textContent = `${quantity.toFixed(4)} BTC`;
+                document.getElementById('potentialLoss').textContent = `$${Math.abs(potentialLoss).toFixed(2)}`;
+                document.getElementById('potentialProfit').textContent = `$${potentialProfit.toFixed(2)}`;
+            }
+
+            // Add event listeners for real-time calculations
+            document.getElementById('capital').addEventListener('input', calculatePosition);
+            document.getElementById('riskPercentage').addEventListener('input', calculatePosition);
+
+            function followTrade() {
+
+                const followBtn = document.getElementById('followTradeBtn'); // Get button element
+
+                // Disable button & show loader
+                if (followBtn) {
+                    followBtn.disabled = true;
+                    followBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Processing...`;
+                }
+                // Prepare the data to send to the backend
+                const data = {
+                    signal_id: document.getElementById('signal_id').value, // Replace with the actual signal id
+                    user_id: document.getElementById('user_id').value, // Replace with the actual user id
+                    current_price: document.getElementById('entryPrice').value, // Replace with the actual current price
+                    entry_price: document.getElementById('entryPrice').value, // Replace with the actual entry price
+                    take_profit: document.getElementById('takeProfit').value, // Replace with the actual take profit
+                    stop_loss: document.getElementById('stopLoss').value, // Replace with the actual stop loss
+
+                };
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfMeta) {
+                    console.error('CSRF token meta tag is missing!');
+                    return;
+                }
+                const csrfToken = csrfMeta.getAttribute('content');
+                // Submit the data using a POST request
+                fetch('/signal/performance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken // Ensure CSRF protection
+                    },
+                    body: JSON.stringify(data)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Close the modal (this part remains the same)
+                        closeModal();
+
+                        // Show success toast
+                        const toast = document.getElementById('successToast');
+                        toast.classList.add('show');
+
+                        // Hide toast after 3 seconds
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                        }, 3000);
+                    })
+                    .catch(error => {
+                        console.error('Error submitting trade:', error);
+                        // Optionally, you can show an error toast here if desired
+                    })
+                        .finally(() => {
+                    // Re-enable button & reset text after response
+                    if (followBtn) {
+                        followBtn.disabled = false;
+                        followBtn.innerHTML = "Follow Trade";
+                    }
+                });
+            }
+
+            // Add event listeners for real-time calculations
+            document.getElementById('capital').addEventListener('input', calculatePosition);
+            document.getElementById('riskPercentage').addEventListener('input', calculatePosition);
+        </script>
 @endsection

@@ -15,24 +15,24 @@ class UserProfile extends Model
 
     // Define fillable attributes to protect against mass assignment
     protected $fillable = [
-        'user_id', 
+        'user_id',
         'trader',
-        'rating', 
-        'short_info', 
+        'rating',
+        'short_info',
         'total_signals',
-        'total_packages', 
-        'win_percentage', 
-        'rrr', 
-        'status', 
+        'total_packages',
+        'win_percentage',
+        'rrr',
+        'status',
         'users_count',
         'about',
-        'deals_in', 
-        'contact_info', 
-        'member_since', 
-        'average_response_time', 
+        'deals_in',
+        'contact_info',
+        'member_since',
+        'average_response_time',
         'location',
         'country_id',
-        'city_id', 
+        'city_id',
         'profile_picture',
     ];
 
@@ -70,10 +70,10 @@ class UserProfile extends Model
 
     public function getPictureUrlAttribute()
     {
-        return $this->profile_picture 
-            ? asset('storage/app/public/' . $this->profile_picture)  
+        return $this->profile_picture
+            ? asset('storage/app/public/' . $this->profile_picture)
             : asset('storage/app/public/uploads/images/profile/default_profile_picture.png');
-            
+
     }
 
     public function badge()
