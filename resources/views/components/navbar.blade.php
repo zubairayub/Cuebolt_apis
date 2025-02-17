@@ -18,14 +18,25 @@
 
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="{{ route('home') }}" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Home</a>
-                    <a href="{{ route('packages.list') }}" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Packages</a>
+                    <a href="{{ route('home') }}"
+                        class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Home</a>
+                    <a href="{{ route('packages.list') }}"
+                        class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Packages</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Signals</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Traders</a>
-                    <button
-                        class="bg-yellow-500 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-400 font-semibold transition-colors duration-200">
-                        Sign In
-                    </button>
+                    @if(Auth::check()) <a href="{{ route('logout') }}"
+                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
+                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();"> Logout </a>
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                            @csrf
+                        </form>
+                    @else
+                        <a href="{{ route('login.user') }}"
+                            class="bg-primary text-dark px-4 py-2 rounded-lg hover:bg-yellow-400 font-semibold">
+                            Sign In / Up
+                        </a>
+                    @endif
+
                 </div>
             </div>
         </div>
@@ -56,10 +67,18 @@
                     Traders
                 </a>
                 <div class="px-3 pt-4">
-                    <button
-                        class="w-full bg-yellow-500 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-400 font-semibold transition-colors duration-200">
-                        Sign In
-                    </button>
+                @if(Auth::check()) <a href="{{ route('logout') }}"
+                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
+                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();"> Logout </a>
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                            @csrf
+                        </form>
+                    @else
+                        <a href="{{ route('login.user') }}"
+                            class="bg-primary text-dark px-4 py-2 rounded-lg hover:bg-yellow-400 font-semibold">
+                            Sign In / Up
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
