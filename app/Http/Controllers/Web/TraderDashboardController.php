@@ -19,45 +19,107 @@ class TraderDashboardController extends Controller
     /**
      * Show the trader's dashboard.
      */
+    // public function showDashboard(Request $request)
+    // {
+    //     // Get the authenticated trader
+    //     $trader = Auth::user();
+
+    //     // User Information Overview
+    //     $profilePicture = $trader->profile->profile_picture ?? asset('default-avatar.png');
+    //     $name = $trader->username;
+    //     $profile = $this->getTraderProfile($trader);
+    //     $earnings = $this->getTotalEarnings($trader);
+    //     $signalFollowers = $this->getFollowersCount($trader);
+    //     $totalSignals = $this->getTotalAndActiveSignals($trader);
+    //     $successRate = $this->getSignalSuccessRate($trader);
+    //     $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader);
+    //     $challengeProgress = $this->getChallengeProgress($trader);
+    //     $rating = $this->getTraderRating($trader);
+    //     $topSignals = $signalsAndTopPerformer['recent_signals'];
+    //     $topPerformingSignals = $signalsAndTopPerformer['top_performer'];
+    //     $topPackages = Package::where('status', 1)
+    //         ->where('user_id', $trader->id)  // If applicable, filter based on user's ownership
+    //         ->orderByDesc('win_percentage')
+    //         ->get();
+    //     // DD($trader);
+    //     // Return data to the Blade view
+    //     return view('inner-pages.trader-dashboard', compact(
+    //         'profilePicture',
+    //         'name',
+    //         'profile',
+    //         'signalFollowers',
+    //         'totalSignals',
+    //         'successRate',
+    //         'topSignals',
+    //         'topPerformingSignals',
+    //         'earnings',
+    //         'challengeProgress',
+    //         'rating',
+    //         'topPackages'
+    //     ));
+    // }
+
+
+
+
     public function showDashboard(Request $request)
     {
-        // Get the authenticated trader
-        $trader = Auth::user();
+        try {
+            // Get the authenticated trader
+            $trader = Auth::user();
 
-        // User Information Overview
-        $profilePicture = $trader->profile->profile_picture ?? asset('default-avatar.png');
-        $name = $trader->username;
-        $profile = $this->getTraderProfile($trader);
-        $earnings = $this->getTotalEarnings($trader);
-        $signalFollowers = $this->getFollowersCount($trader);
-        $totalSignals = $this->getTotalAndActiveSignals($trader);
-        $successRate = $this->getSignalSuccessRate($trader);
-        $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader);
-        $challengeProgress = $this->getChallengeProgress($trader);
-        $rating = $this->getTraderRating($trader);
-        $topSignals = $signalsAndTopPerformer['recent_signals'];
-        $topPerformingSignals = $signalsAndTopPerformer['top_performer'];
-        $topPackages = Package::where('status', 1)
-            ->where('user_id', $trader->id)  // If applicable, filter based on user's ownership
-            ->orderByDesc('win_percentage')
-            ->get();
-        // DD($trader);
-        // Return data to the Blade view
-        return view('inner-pages.trader-dashboard', compact(
-            'profilePicture',
-            'name',
-            'profile',
-            'signalFollowers',
-            'totalSignals',
-            'successRate',
-            'topSignals',
-            'topPerformingSignals',
-            'earnings',
-            'challengeProgress',
-            'rating',
-            'topPackages'
-        ));
+            // User Information Overview
+            $profilePicture = $trader->profile->profile_picture ?? asset('default-avatar.png');
+            $name = $trader->username;
+
+            // Handle potential null values or empty data
+            $profile = $this->getTraderProfile($trader) ?? [];  // Default to empty array if null
+            $earnings = $this->getTotalEarnings($trader) ?? 0;  // Default to 0 if null
+            $signalFollowers = $this->getFollowersCount($trader) ?? 0;  // Default to 0 if null
+            $totalSignals = $this->getTotalAndActiveSignals($trader) ?? ['total' => 0, 'active' => 0];  // Default to empty array
+            $successRate = $this->getSignalSuccessRate($trader) ?? 0;  // Default to 0 if null
+            $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader) ?? ['recent_signals' => [], 'top_performer' => []];  // Default to empty arrays
+            $challengeProgress = $this->getChallengeProgress($trader) ?? 0;  // Default to 0 if null
+            $rating = $this->getTraderRating($trader) ?? 0;  // Default to 0 if null
+
+            // Get top packages, ensure it's always an array or collection
+            $topPackages = Package::where('status', 1)
+                ->where('user_id', $trader->id)  // If applicable, filter based on user's ownership
+                ->orderByDesc('win_percentage')
+                ->get();
+
+            // Ensure that $topPackages is not null or empty
+            if ($topPackages->isEmpty()) {
+                $topPackages = collect();  // Use empty collection if no packages
+            }
+
+            // Return data to the Blade view
+            return view('inner-pages.trader-dashboard', compact(
+                'profilePicture',
+                'name',
+                'profile',
+                'signalFollowers',
+                'totalSignals',
+                'successRate',
+                'topSignals',
+                'topPerformingSignals',
+                'earnings',
+                'challengeProgress',
+                'rating',
+                'topPackages'
+            ));
+        } catch (\Exception $e) {
+            // Catch any unexpected errors and return a user-friendly error message
+            // Log the error for further analysis
+            Log::error("Error loading trader dashboard: " . $e->getMessage());
+
+            // Return a fallback view with an error message
+            return view('inner-pages.trader-dashboard', [
+                'error' => 'There was an issue loading your dashboard. Please try again later.'
+            ]);
+        }
     }
+
 
 
     // Helper Methods
