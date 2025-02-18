@@ -111,7 +111,7 @@ class TraderDashboardController extends Controller
         } catch (\Exception $e) {
             // Catch any unexpected errors and return a user-friendly error message
             // Log the error for further analysis
-            Log::error("Error loading trader dashboard: " . $e->getMessage());
+            //Log::error("Error loading trader dashboard: " . $e->getMessage());
 
             // Return a fallback view with an error message
             return view('inner-pages.trader-dashboard', [
