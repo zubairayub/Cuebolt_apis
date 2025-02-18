@@ -126,6 +126,18 @@ class WelcomeScreenController extends Controller
         return view('inner-pages.packages-list', compact('topPackages'));
     }
 
+    public function trader_dashboard()
+    {
+        // Get top packages based on highest win percentage
+        $topPackages = Package::where('status', 1)
+            ->orderByDesc('win_percentage')
+            ->get();
+
+      
+        // Return data to the home view
+        return view('inner-pages.trader-dashboard', compact('topPackages'));
+    }
+
 
     
 

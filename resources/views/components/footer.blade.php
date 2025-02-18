@@ -39,7 +39,10 @@
         </div>
     </footer>
 </body>
-<script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0" defer></script>
+    <script>
       // Mobile menu functions
       function toggleMobileMenu() {
         const mobileMenu = document.querySelector('.mobile-menu');

@@ -39,8 +39,11 @@ Route::get('/', [WelcomeScreenController::class, 'home'])->name('home');
 
 Route::get('/packages-list', [WelcomeScreenController::class, 'packages_list'])->name('packages.list');
 
+Route::get('/trader-dashboard', [TraderDashboardController::class, 'showDashboard'])->name('trader.dashboard');
 
 Route::post('/logout', [ApiController::class, 'logout'])->name('logout');
+
+Route::get('/fetch-top-packages', [PackagesController::class, 'fetchTopPackages']);
 
 
 

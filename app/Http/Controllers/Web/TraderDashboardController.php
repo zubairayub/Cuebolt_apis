@@ -25,54 +25,50 @@ class TraderDashboardController extends Controller
         $trader = Auth::user();
 
         // User Information Overview
-        $profilePicture = $trader->profile->profile_picture;  // Assuming this column exists in your users table
+        $profilePicture = $trader->profile->profile_picture ?? asset('default-avatar.png');
         $name = $trader->username;
         $profile = $this->getTraderProfile($trader);
         $earnings = $this->getTotalEarnings($trader);
-        $singal_follows = $this->getFollowersCount($trader);
-        $singal_total = $this->getTotalAndActiveSignals($trader);
-        $success_rate = $this->getSignalSuccessRate($trader);
-        $getSignalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader);
-
-        
-        
-  
-        
-     
-
-        
-
-        // Challenge Progress
+        $signalFollowers = $this->getFollowersCount($trader);
+        $totalSignals = $this->getTotalAndActiveSignals($trader);
+        $successRate = $this->getSignalSuccessRate($trader);
+        $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader);
         $challengeProgress = $this->getChallengeProgress($trader);
-
-        // Ratings and Reviews
         $rating = $this->getTraderRating($trader);
-
-        // Return the dashboard data
-        return response()->json([
-            'profile_picture' => $profilePicture,
-            'id' => $trader->id,
-            'name' => $name,
-            'profile' => $profile,
-            'signal_followers' => $singal_follows,
-            'total_signal' => $singal_total,
-            'success_rate'=> $success_rate,
-            'getSignalsAndTopPerformer'=> $getSignalsAndTopPerformer,
-            'earnings' => $earnings,
-            'challenge_progress' => $challengeProgress,
-            'rating' => $rating,
-        ]);
+        $topSignals = $signalsAndTopPerformer['recent_signals'];
+        $topPerformingSignals = $signalsAndTopPerformer['top_performer'];
+        $topPackages = Package::where('status', 1)
+            ->where('user_id', $trader->id)  // If applicable, filter based on user's ownership
+            ->orderByDesc('win_percentage')
+            ->get();
+        // DD($trader);
+        // Return data to the Blade view
+        return view('inner-pages.trader-dashboard', compact(
+            'profilePicture',
+            'name',
+            'profile',
+            'signalFollowers',
+            'totalSignals',
+            'successRate',
+            'topSignals',
+            'topPerformingSignals',
+            'earnings',
+            'challengeProgress',
+            'rating',
+            'topPackages'
+        ));
     }
+
 
     // Helper Methods
 
     // Get the trader's badge (can be based on performance, level, or rank)
     private function getTraderProfile($trader)
-    {   
+    {
         // Fetch the profile with related country, city, and badge data
         $profile = UserProfile::with(['country', 'city', 'badge'])
-        ->where('user_id', $trader->id)
-        ->first();
+            ->where('user_id', $trader->id)
+            ->first();
 
         return $profile;
     }
@@ -84,20 +80,20 @@ class TraderDashboardController extends Controller
         $overallEarnings = Order::where('user_id', $trader->id)
             ->where('order_status_id', 2) // Assuming status 2 means "completed"
             ->sum('amount');
-    
+
         // Get current month's earnings
         $currentMonthEarnings = Order::where('user_id', $trader->id)
             ->where('order_status_id', 2)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('amount');
-    
+
         // Get current year's earnings
         $currentYearEarnings = Order::where('user_id', $trader->id)
             ->where('order_status_id', 2)
             ->whereYear('created_at', now()->year)
             ->sum('amount');
-    
+
         return [
             'overall' => $overallEarnings,
             'month' => $currentMonthEarnings,
@@ -115,13 +111,13 @@ class TraderDashboardController extends Controller
                     ->from('packages')
                     ->where('user_id', $trader->id);
             });
-    
+
             // Total number of signals
             $totalSignals = (clone $baseQuery)->count();
-    
+
             // Total number of active signals (status = 1)
             $activeSignals = (clone $baseQuery)->where('status', 1)->count();
-    
+
             return [
                 'total_signals' => $totalSignals,
                 'active_signals' => $activeSignals,
@@ -135,7 +131,7 @@ class TraderDashboardController extends Controller
             ]; // Return fallback values in case of error
         }
     }
-    
+
 
     // Get the success rate of signals
     private function getSignalSuccessRate($trader)
@@ -149,18 +145,18 @@ class TraderDashboardController extends Controller
                 END) as successful_signals,
                 COUNT(*) as total_signals
             ")
-            ->whereIn('package_id', function ($query) use ($trader) {
-                $query->select('id')
-                    ->from('packages')
-                    ->where('user_id', $trader->id);
-            })
-            ->first();
-    
+                ->whereIn('package_id', function ($query) use ($trader) {
+                    $query->select('id')
+                        ->from('packages')
+                        ->where('user_id', $trader->id);
+                })
+                ->first();
+
             $successRate = $result->total_signals > 0
                 ? ($result->successful_signals / $result->total_signals) * 100
                 : 0;
-    
-                return ['success_rate' => $successRate];
+
+            return ['success_rate' => $successRate];
 
         } catch (\Exception $e) {
             \Log::error("Error calculating signal success rate for trader {$trader->id}: " . $e->getMessage());
@@ -185,30 +181,30 @@ class TraderDashboardController extends Controller
         return round($averageRating, 1); // Round to 1 decimal place
     }
 
-     private function getFollowersCount($trader)
-     {
-         try {
-             // Fetch the count of followers directly using nested queries
-             $followersCount = SignalPerformance::whereIn('signal_id', function ($query) use ($trader) {
-                 $query->select('id')
-                     ->from('trades')
-                     ->whereIn('package_id', function ($subQuery) use ($trader) {
-                         $subQuery->select('id')
-                             ->from('packages')
-                             ->where('user_id', $trader->id);
-                     });
-             })->count();
-     
-             return $followersCount;
-         } catch (\Exception $e) {
-             // Handle exceptions gracefully
-             \Log::error("Error fetching followers count for trader {$trader->id}: " . $e->getMessage());
-             return 0; // Return 0 in case of error
-         }
-        
-     }
+    private function getFollowersCount($trader)
+    {
+        try {
+            // Fetch the count of followers directly using nested queries
+            $followersCount = SignalPerformance::whereIn('signal_id', function ($query) use ($trader) {
+                $query->select('id')
+                    ->from('trades')
+                    ->whereIn('package_id', function ($subQuery) use ($trader) {
+                        $subQuery->select('id')
+                            ->from('packages')
+                            ->where('user_id', $trader->id);
+                    });
+            })->count();
 
-     private function getSignalsAndTopPerformer($trader)
+            return $followersCount;
+        } catch (\Exception $e) {
+            // Handle exceptions gracefully
+            \Log::error("Error fetching followers count for trader {$trader->id}: " . $e->getMessage());
+            return 0; // Return 0 in case of error
+        }
+
+    }
+
+    private function getSignalsAndTopPerformer($trader)
     {
         try {
             // Fetch 3 most recent signals
@@ -217,9 +213,9 @@ class TraderDashboardController extends Controller
                     ->from('packages')
                     ->where('user_id', $trader->id);
             })
-            ->orderBy('created_at', 'desc')
-            ->take(3)
-            ->get();
+                ->orderBy('created_at', 'desc')
+                ->take(3)
+                ->get();
 
             // Fetch all trades for top performance evaluation
             $trades = Trade::whereIn('package_id', function ($query) use ($trader) {
@@ -227,7 +223,7 @@ class TraderDashboardController extends Controller
                     ->from('packages')
                     ->where('user_id', $trader->id);
             })
-            ->get();
+                ->get();
 
             // Calculate top-performing signal
             $topPerformingSignal = $this->getTopPerformingSignal($trades);
@@ -253,7 +249,7 @@ class TraderDashboardController extends Controller
 
             foreach ($trades as $trade) {
                 $symbol = $trade->marketPair->symbol ?? null; // Assuming `market_pair` contains the symbol
-                
+
                 $entryPrice = $trade->entry_price;
 
                 if ($symbol && $entryPrice) {
@@ -265,7 +261,10 @@ class TraderDashboardController extends Controller
 
                         if ($performance > $maxPerformance) {
                             $maxPerformance = $performance;
-                            $topSignal = [$trade,$currentPrice];
+                            // Add current price to the trade array
+                            $trade['current_price'] = $currentPrice;
+                            $topSignal[] = $trade;
+
                         }
                     }
                 }
@@ -289,7 +288,7 @@ class TraderDashboardController extends Controller
             $data = json_decode($response, true);
 
             if (isset($data['price'])) {
-                return (float)$data['price'];
+                return (float) $data['price'];
             }
         } catch (\Exception $e) {
             \Log::error("Error fetching live price for symbol {$symbol}: " . $e->getMessage());
@@ -300,7 +299,7 @@ class TraderDashboardController extends Controller
 
 
 
-     
+
 
 }
 
