@@ -24,7 +24,7 @@
                         class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Packages</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Signals</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Traders</a>
-                    <a href="{{ route('trader.dashboard') }}" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Traders</a>
+                    <a href="{{ route('trader.dashboard') }}" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Dashboard</a>
                     
                      
                     @if(Auth::check()) <a href="{{ route('logout') }}"
