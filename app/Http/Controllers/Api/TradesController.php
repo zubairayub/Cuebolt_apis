@@ -387,9 +387,11 @@ class TradesController extends Controller
                 ->pluck('user_id'); // Get user IDs
             //updated notification
            // Step 2: Fetch users with valid FCM tokens and their IDs
-            $usersWithTokens = User::whereIn('id', $userIds)
-                ->whereNotNull('fcm_token') // Only users with valid FCM tokens
-                ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
+            // $usersWithTokens = User::whereIn('id', $userIds)
+            //     ->whereNotNull('fcm_token') // Only users with valid FCM tokens
+            //     ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
+            $usersWithTokens = User::whereNotNull('fcm_token') // Only users with valid FCM tokens
+            ->get(['id', 'fcm_token']); // Fetch both user ID and FCM token
 
             // Step 3: Extract tokens and user IDs separately if needed
             $tokens = $usersWithTokens->pluck('fcm_token');
