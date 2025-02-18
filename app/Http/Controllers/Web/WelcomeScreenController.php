@@ -132,11 +132,17 @@ class WelcomeScreenController extends Controller
         $topPackages = Package::where('status', 1)
             ->orderByDesc('win_percentage')
             ->get();
-
-      
+    
+        // Check if $topPackages is not empty and is an instance of collection
+        if ($topPackages->isEmpty()) {
+            // Handle the case where there are no packages
+            $topPackages = collect(); // You can return an empty collection
+        }
+    
         // Return data to the home view
         return view('inner-pages.trader-dashboard', compact('topPackages'));
     }
+    
 
 
     
