@@ -369,7 +369,7 @@ class UpdateTradeProfitLoss extends Command
                 $avgRRR = ($totalTrades > 0) ? $totalRRR / $totalTrades : 0;
 
                 // Optional: Cap the RRR at a maximum value to prevent extremely large values
-                $maxRRR = 1000; // Set a maximum value that makes sense for your use case
+                $maxRRR = 999.99; // Set a maximum value that makes sense for your use case
                 $avgRRR = min($avgRRR, $maxRRR);
 
                 // Update the package with win/loss percentages, the calculated average profit/loss percentage, and average RRR
