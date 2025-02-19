@@ -227,7 +227,7 @@ class UpdateTradeProfitLoss extends Command
                                     Log::channel('trades_logs')->info("sell zone Trade ID {$trade->id}: {$profitLoss}% ");
                                 }
                             }
-                        }else{
+                        } else {
 
                             if ($tradetype === 'BUY') {
                                 // Condition for "buy" trade type
@@ -367,6 +367,10 @@ class UpdateTradeProfitLoss extends Command
 
                 // Calculate the average RRR for the package
                 $avgRRR = ($totalTrades > 0) ? $totalRRR / $totalTrades : 0;
+
+                // Optional: Cap the RRR at a maximum value to prevent extremely large values
+                $maxRRR = 1000; // Set a maximum value that makes sense for your use case
+                $avgRRR = min($avgRRR, $maxRRR);
 
                 // Update the package with win/loss percentages, the calculated average profit/loss percentage, and average RRR
                 $package->update([
