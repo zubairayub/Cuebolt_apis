@@ -375,11 +375,12 @@ class TraderDashboardController extends Controller
 
             foreach ($recentSignals as $trade) {
                 $symbol = $trade->marketPair->symbol ?? null; // Assuming `market_pair` contains the symbol
+                $base_currency = $trade->marketPair->base_currency ?? null; // Assuming `market_pair` contains the symbol
 
                 $entryPrice = $trade->entry_price;
 
                 if ($symbol && $entryPrice) {
-                    $currentPrice = $this->getLivePriceFromBinance($symbol);
+                    $currentPrice = $this->getLivePriceFromBinance($symbol,$base_currency);
 
                             // Add current price to the trade array
                             $trade['current_price'] = $currentPrice;
@@ -394,7 +395,7 @@ class TraderDashboardController extends Controller
 
             // Calculate top-performing signal
             $topPerformingSignal = $this->getTopPerformingSignal($trades);
-
+           // dd($topPerformingSignal);
             return [
                 'recent_signals' => $recentSignalswithprice,
                 'top_performer' => $topPerformingSignal,
@@ -416,11 +417,13 @@ class TraderDashboardController extends Controller
 
             foreach ($trades as $trade) {
                 $symbol = $trade->marketPair->symbol ?? null; // Assuming `market_pair` contains the symbol
+                $base_currency = $trade->marketPair->base_currency ?? null; // Assuming `market_pair` contains the symbol
 
                 $entryPrice = $trade->entry_price;
 
                 if ($symbol && $entryPrice) {
-                    $currentPrice = $this->getLivePriceFromBinance($symbol);
+                    $currentPrice = $this->getLivePriceFromBinance($symbol,$base_currency);
+
 
                     if ($currentPrice) {
                         // Calculate performance as a percentage
@@ -445,7 +448,7 @@ class TraderDashboardController extends Controller
     }
 
 
-    private function getLivePriceFromBinance($symbol,$base_currency,$quote_currency)
+    private function getLivePriceFromBinance($symbol,$base_currency)
     {
         // try {
         //     $binanceSymbol = str_replace('/', '', strtoupper($symbol));
@@ -476,7 +479,7 @@ class TraderDashboardController extends Controller
         
         
         // CryptoCompare
-        "https://min-api.cryptocompare.com/data/price?fsym=" . strtoupper($base_currency) . "&tsyms=".$quote_currency,
+        "https://min-api.cryptocompare.com/data/price?fsym=" . strtoupper($base_currency) . "&tsyms=USDT",
         
         // KuCoin
        // "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=" . strtoupper($symbol) . "-USDT",
@@ -519,6 +522,23 @@ class TraderDashboardController extends Controller
             // Special handling for Nomics
             if (isset($data[0]['price'])) {
                 return (float) $data[0]['price'];
+            }
+
+              // Handle Kraken response format
+              if (isset($data['result'][$binanceSymbol]['c'][0])) {
+                // Kraken returns last traded price in the 'c' field (closing price)
+                return (float) $data['result'][$binanceSymbol]['c'][0];
+            }
+
+            if (isset($data['data']['market_data']['price_usd'])) {
+                return (float) $data['data']['market_data']['price_usd'];
+            }
+
+            if (isset($data['USDT'])) {
+                return (float) $data['USDT'];
+            }
+            if (isset($data['last'])) {
+                return (float) $data['last'];
             }
 
         } catch (\Exception $e) {
