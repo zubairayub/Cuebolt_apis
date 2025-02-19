@@ -757,8 +757,8 @@ class PackagesController extends Controller
         }
 
         // Calculate average win rate and average RRR
-        $averageWinRate = $topPackages->count() > 0 ? $totalWinRate / $topPackages->count() : 0;
-        $averageRRR = $topPackages->count() > 0 ? $totalRRR / $topPackages->count() : 0;
+        $averageWinRate =  $totalWinRate ;
+        $averageRRR =  $totalRRR ;
 
         // Find the most traded pair
         arsort($pairTradeCounts); // Sort by the number of trades in descending order
