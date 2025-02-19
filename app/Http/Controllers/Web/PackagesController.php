@@ -713,6 +713,7 @@ class PackagesController extends Controller
 
 
         // Initialize variables for calculations
+        $totalPackages = 0;
         $totalTrades = 0;
         $winCount = 0;
         $lossCount = 0;
