@@ -204,6 +204,7 @@ class UpdateTradeProfitLoss extends Command
                         // Calculate Risk-Reward Ratio (RRR)
                         $rrr = ($takeProfit - $entryPrice) / ($entryPrice - $stopLoss);
                         if (is_null($trade->profit_loss) || $trade->profit_loss === '') {
+                            Log::channel('trades_logs')->info("calcution Trade ID {$trade->id}: {$profitLoss}% ");
                             if ($tradetype === 'BUY') {
                                 // Condition for "buy" trade type
                                 if ($currentPrice <= $entryPrice) {
@@ -212,7 +213,7 @@ class UpdateTradeProfitLoss extends Command
                                         'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
                                         'notes' => $symbol . ' Long Trade Active',
                                     ]);
-                                    Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                    Log::channel('trades_logs')->info("buy zone  Trade ID {$trade->id}: {$profitLoss}% ");
                                 }
                             } else {
                                 // Condition for "sell" or any other trade type
@@ -222,9 +223,49 @@ class UpdateTradeProfitLoss extends Command
                                         'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
                                         'notes' => $symbol . ' Short Trade Active',
                                     ]);
-                                    Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                    Log::channel('trades_logs')->info("sell zone Trade ID {$trade->id}: {$profitLoss}% ");
                                 }
                             }
+                        }else{
+
+                            if ($tradetype === 'BUY') {
+                                // Condition for "buy" trade type
+                                if ($currentPrice < $stopLoss) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' Sl hit buy trade',
+                                    ]);
+                                    Log::channel('trades_logs')->info(" Sl hit buy trade Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                                if ($currentPrice > $takeProfit) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' TP hit buy trade',
+                                    ]);
+                                    Log::channel('trades_logs')->info(" TP hit buy trade Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                            } else {
+                                // Condition for "sell" or any other trade type
+                                if ($currentPrice > $stopLoss) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' sl hit short trade',
+                                    ]);
+                                    Log::channel('trades_logs')->info(" sl hit short trade Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                                if ($currentPrice < $takeProfit) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' tp hit short trade',
+                                    ]);
+                                    Log::channel('trades_logs')->info(" tp hit short trade Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                            }
+
                         }
                         // if ((is_null($trade->profit_loss) || $trade->profit_loss === '') && ($currentPrice >= $takeProfit || $currentPrice <= $stopLoss)) {
                         //     // Update the trade record with profit/loss and RRR
