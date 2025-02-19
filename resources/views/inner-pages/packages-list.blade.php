@@ -9,12 +9,15 @@
                 <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
                     <!-- Trader Profile -->
                     <div class="flex items-center mb-4">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
-                            alt="John Smith" class="w-12 h-12 rounded-full mr-4" />
+                       <a href="{{ route('trader.dashboard', ['username' => $package->user->username]) }}">
+                       <img src="{{ $package->userProfilelink->profile_picture
+                ? asset('storage/' . $package->userProfilelink->profile_picture)
+                : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format' }}"
+                            alt="{{ $package->userProfilelink->user->name ?? 'Trader' }}" class="w-12 h-12 rounded-full mr-4" /></a>
                         <div>
                             <h3 class="text-xl font-bold">{{ $package->name }}</h3>
                             <div class="flex items-center">
-                                <span class="text-gray-400 mr-2">{{ $package->user->username }}</span>
+                                <span class="text-gray-400 mr-2"><a href="{{ route('trader.dashboard', ['username' => $package->user->username]) }}">{{ $package->user->username }}</a></span>
                                 <div class="flex items-center text-yellow-500">
                                     <i class="lucide-star mr-1"></i>
                                     @if ($package->userProfilelink->rating > 0)

@@ -17,7 +17,9 @@
         <div class="max-w-7xl mx-auto px-4 py-16">
             <div class="flex flex-col md:flex-row items-center gap-8">
                 <div class="relative">
-                    <img src="{{ $profile_picture ?? 'https://via.placeholder.com/150' }}" alt="{{ $name }}"
+                    <img src="{{ $profile->profile_picture
+                ? asset('storage/' . $profile->profile_picture)
+                : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format' }}" alt="{{ $name }}"
                         class="w-32 h-32 rounded-full border-4 border-yellow-500" />
                     <span
                         class="absolute bottom-0 right-0 w-4 h-4 rounded-full {{ $profile->is_online ? 'bg-green-500' : 'bg-gray-500' }} border-2 border-gray-900"></span>
@@ -94,107 +96,174 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Signal Card 1 -->
             @foreach($topSignals as $signal)
-                <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                    <!-- Trader & Package Info -->
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
-                                alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
-                            <div>
-                                <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
-                                <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
-                            </div>
-                        </div>
-                        <!-- <button
-                                                                                                                                                                        class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                                                                                                                                                                        <span>Follow</span>
-                                                                                                                                                                    </button> -->
-
-                        <button
-                            onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
-                            class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                            <span>Follow Trade</span>
-                        </button>
-                    </div>
-
-                    <!-- Trade Details -->
-                    <div class="space-y-3">
-                        <!-- Basic Info -->
-                        <div class="flex justify-between items-center">
-                            <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
-                            <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
-                        </div>
-
-                        <!-- Entry/TP/SL Grid -->
-                        <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
-                            <div>
-                                <div class="text-xs text-gray-400">Entry</div>
-                                <div class="font-semibold">
-                                    {{ number_format($signal->entry_price, 2) }}
-
+            <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
+                        <!-- Trader & Package Info -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
+                                    alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
+                                <div>
+                                    <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
+                                    <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
                                 </div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">TP</div>
-                                <div class="font-semibold text-green-500">
-                                    {{ number_format($signal->take_profit, 2) }}
+                            <!-- <button
+                                                                                                                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                                                                                                                <span>Follow</span>
+                                                                                                                            </button> -->
+
+                            <button
+                                onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
+                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                <span>Follow Trade</span>
+                            </button>
+                        </div>
+
+                        <!-- Trade Details -->
+                        <div class="space-y-3">
+                            <!-- Basic Info -->
+                            <div class="flex justify-between items-center">
+                                <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
+                                <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
+                            </div>
+
+                            <!-- Entry/TP/SL Grid -->
+                            <!-- <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">Entry</div>
+                                                                    <div class="font-semibold">
+                                                                        {{ number_format($signal->entry_price, 2) }}
+
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">TP</div>
+                                                                    <div class="font-semibold text-green-500">
+                                                                        {{ number_format($signal->take_profit, 2) }}
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">SL</div>
+                                                                    <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+                                                                </div>
+                                                            </div> -->
+                            <div class="grid grid-cols-4 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                 <!-- Live Price -->
+                                 <div>
+                                    <div class="text-xs text-gray-400">Current Price</div>
+                                    <div class="font-semibold">
+                                        {{ number_format($signal->current_price, 2) }}
+                                    </div>
+                                </div>
+                            
+                            <!-- Entry Price -->
+                                <div>
+                                    <div class="text-xs text-gray-400">Entry</div>
+                                    <div class="font-semibold">
+                                        {{ number_format($signal->entry_price, 2) }}
+                                    </div>
+                                </div>
+
+                                <!-- Take Profit with Percentage Difference & Tooltip -->
+                                <div class="relative group">
+                                    <div class="text-xs text-gray-400">TP</div>
+                                    <div class="font-semibold text-green-500">
+                                        {{ number_format($signal->take_profit, 2) }}
+                                        <span class="text-xs text-green-400 block">
+                                            (+{{ number_format($signal->percentageDifferencetp, 2) }}%)
+                                        </span>
+                                    </div>
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        TP is {{ number_format($signal->percentageDifferencetp, 2) }}% above Entry Price
+                                    </div>
+                                </div>
+
+                                <!-- Stop Loss with Percentage Difference & Tooltip -->
+                                <div class="relative group">
+                                    <div class="text-xs text-gray-400">SL</div>
+                                    <div class="font-semibold text-red-500">
+                                        {{ number_format($signal->stop_loss, 2) }}
+                                        <span class="text-xs text-red-400 block">
+                                            ({{ number_format($signal->percentageDifferencesl, 2) }}%)
+                                        </span>
+                                    </div>
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        SL is {{ number_format($signal->percentageDifferencesl, 2) }}% below Entry Price
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">SL</div>
-                                <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+
+
+                            <!-- Trade Images -->
+                            <div class="grid grid-cols-2 gap-2">
+                                @forelse ($signal->images as $image)
+                                    <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
+                                        class="rounded-lg w-full h-20 object-cover" />
+                                @empty
+
+                                @endforelse
+                            </div>
+
+
+                            <!-- Additional Details -->
+                            <div class="grid grid-cols-4 gap-2 text-xs">
+                                <div class="bg-gray-700 p-1.5 rounded">
+                                    <div class="text-gray-400">TF</div>
+                                    <div class="font-semibold">{{ $signal->time_frame }}</div>
+                                </div>
+                                <div class="bg-gray-700 p-1.5 rounded relative group">
+                                    <div class="text-gray-400">Predicted Risk-Reward</div>
+                                    <div class="font-semibold text-blue-500">
+                                        {{ number_format($signal->rrr, 2) }}
+                                    </div>
+
+                                    <!-- Tooltip for explanation -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        RRR shows potential reward vs risk. Higher is better!
+                                    </div>
+                                </div>
+                                <div class="bg-gray-700 p-1.5 rounded relative group">
+                                    <div class="text-gray-400">Achieved RRR</div>
+                                    <div class="font-semibold">
+                                        {{ $signal->rrr !== null ? number_format($signal->rrr, 2) : 'Trade is Live' }}
+                                    </div>
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {{ $signal->rrr !== null ? 'Achieved RRR represents the actual risk-to-reward ratio after execution.' : 'Trade is still live, RRR will be calculated after completion.' }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-700 p-1.5 rounded">
+                                    <div class="text-gray-400">Valid</div>
+                                    <div class="font-semibold">{{ $signal->validity }}</div>
+                                </div>
+
+
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="flex justify-between text-xs text-gray-400">
+                                <span>Posted:
+                                    {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
+                                <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
+                            </div>
+
+
+                            <!-- Notes -->
+                            <div class="bg-gray-700 p-2 rounded-lg">
+                                <div class="text-xs text-gray-400">Notes</div>
+                                <p class="text-xs">{{ $signal->notes }}</p>
                             </div>
                         </div>
 
-                        <!-- Trade Images -->
-                        <div class="grid grid-cols-2 gap-2">
-                            @forelse ($signal->images as $image)
-                                <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
-                                    class="rounded-lg w-full h-20 object-cover" />
-                            @empty
-
-                            @endforelse
-                        </div>
-
-
-                        <!-- Additional Details -->
-                        <div class="grid grid-cols-4 gap-2 text-xs">
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">TF</div>
-                                <div class="font-semibold">{{ $signal->time_frame }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">RRR</div>
-                                <div class="font-semibold">{{ number_format($signal->rrr, 2) }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">Valid</div>
-                                <div class="font-semibold">{{ $signal->validity }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">Profit</div>
-                                <div class="font-semibold text-green-500">{{ number_format($signal->profit_loss, 2) }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Date & Time -->
-                        <div class="flex justify-between text-xs text-gray-400">
-                            <span>Posted:
-                                {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
-                            <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
-                        </div>
-
-
-                        <!-- Notes -->
-                        <div class="bg-gray-700 p-2 rounded-lg">
-                            <div class="text-xs text-gray-400">Notes</div>
-                            <p class="text-xs">{{ $signal->notes }}</p>
-                        </div>
                     </div>
-
-                </div>
             @endforeach
 
             <!-- Additional signal cards would go here -->
@@ -212,107 +281,173 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @foreach($topPerformingSignals as $signal)
-                <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                    <!-- Trader & Package Info -->
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
-                                alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
-                            <div>
-                                <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
-                                <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
-                            </div>
-                        </div>
-                        <!-- <button
-                                                                                                                                                                        class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                                                                                                                                                                        <span>Follow</span>
-                                                                                                                                                                    </button> -->
-
-                        <button
-                            onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
-                            class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                            <span>Follow Trade</span>
-                        </button>
-                    </div>
-
-                    <!-- Trade Details -->
-                    <div class="space-y-3">
-                        <!-- Basic Info -->
-                        <div class="flex justify-between items-center">
-                            <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
-                            <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
-                        </div>
-
-                        <!-- Entry/TP/SL Grid -->
-                        <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
-                            <div>
-                                <div class="text-xs text-gray-400">Entry</div>
-                                <div class="font-semibold">
-                                    {{ number_format($signal->entry_price, 2) }}
-
+            <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
+                        <!-- Trader & Package Info -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
+                                    alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
+                                <div>
+                                    <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
+                                    <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
                                 </div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">TP</div>
-                                <div class="font-semibold text-green-500">
-                                    {{ number_format($signal->take_profit, 2) }}
+                            <!-- <button
+                                                                                                                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                                                                                                                <span>Follow</span>
+                                                                                                                            </button> -->
+
+                            <button
+                                onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
+                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                <span>Follow Trade</span>
+                            </button>
+                        </div>
+
+                        <!-- Trade Details -->
+                        <div class="space-y-3">
+                            <!-- Basic Info -->
+                            <div class="flex justify-between items-center">
+                                <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
+                                <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
+                            </div>
+
+                            <!-- Entry/TP/SL Grid -->
+                            <!-- <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">Entry</div>
+                                                                    <div class="font-semibold">
+                                                                        {{ number_format($signal->entry_price, 2) }}
+
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">TP</div>
+                                                                    <div class="font-semibold text-green-500">
+                                                                        {{ number_format($signal->take_profit, 2) }}
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div class="text-xs text-gray-400">SL</div>
+                                                                    <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+                                                                </div>
+                                                            </div> -->
+                            <div class="grid grid-cols-4 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                 <!-- Live Price -->
+                                 <div>
+                                    <div class="text-xs text-gray-400">Current Price</div>
+                                    <div class="font-semibold">
+                                        {{ number_format($signal->current_price, 2) }}
+                                    </div>
+                                </div>
+                                <!-- Entry Price -->
+                                <div>
+                                    <div class="text-xs text-gray-400">Entry</div>
+                                    <div class="font-semibold">
+                                        {{ number_format($signal->entry_price, 2) }}
+                                    </div>
+                                </div>
+
+                                <!-- Take Profit with Percentage Difference & Tooltip -->
+                                <div class="relative group">
+                                    <div class="text-xs text-gray-400">TP</div>
+                                    <div class="font-semibold text-green-500">
+                                        {{ number_format($signal->take_profit, 2) }}
+                                        <span class="text-xs text-green-400 block">
+                                            (+{{ number_format($signal->percentageDifferencetp, 2) }}%)
+                                        </span>
+                                    </div>
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        TP is {{ number_format($signal->percentageDifferencetp, 2) }}% above Entry Price
+                                    </div>
+                                </div>
+
+                                <!-- Stop Loss with Percentage Difference & Tooltip -->
+                                <div class="relative group">
+                                    <div class="text-xs text-gray-400">SL</div>
+                                    <div class="font-semibold text-red-500">
+                                        {{ number_format($signal->stop_loss, 2) }}
+                                        <span class="text-xs text-red-400 block">
+                                            ({{ number_format($signal->percentageDifferencesl, 2) }}%)
+                                        </span>
+                                    </div>
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        SL is {{ number_format($signal->percentageDifferencesl, 2) }}% below Entry Price
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-400">SL</div>
-                                <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+
+
+                            <!-- Trade Images -->
+                            <div class="grid grid-cols-2 gap-2">
+                                @forelse ($signal->images as $image)
+                                    <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
+                                        class="rounded-lg w-full h-20 object-cover" />
+                                @empty
+
+                                @endforelse
+                            </div>
+
+
+                            <!-- Additional Details -->
+                            <div class="grid grid-cols-4 gap-2 text-xs">
+                                <div class="bg-gray-700 p-1.5 rounded">
+                                    <div class="text-gray-400">TF</div>
+                                    <div class="font-semibold">{{ $signal->time_frame }}</div>
+                                </div>
+                                <div class="bg-gray-700 p-1.5 rounded relative group">
+                                    <div class="text-gray-400">Predicted Risk-Reward</div>
+                                    <div class="font-semibold text-blue-500">
+                                        {{ number_format($signal->rrr, 2) }}
+                                    </div>
+
+                                    <!-- Tooltip for explanation -->
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        RRR shows potential reward vs risk. Higher is better!
+                                    </div>
+                                </div>
+                                <div class="bg-gray-700 p-1.5 rounded relative group">
+                                    <div class="text-gray-400">Achieved RRR</div>
+                                    <div class="font-semibold">
+                                        {{ $signal->rrr !== null ? number_format($signal->rrr, 2) : 'Trade is Live' }}
+                                    </div>
+                                    <div
+                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {{ $signal->rrr !== null ? 'Achieved RRR represents the actual risk-to-reward ratio after execution.' : 'Trade is still live, RRR will be calculated after completion.' }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-700 p-1.5 rounded">
+                                    <div class="text-gray-400">Valid</div>
+                                    <div class="font-semibold">{{ $signal->validity }}</div>
+                                </div>
+
+
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="flex justify-between text-xs text-gray-400">
+                                <span>Posted:
+                                    {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
+                                <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
+                            </div>
+
+
+                            <!-- Notes -->
+                            <div class="bg-gray-700 p-2 rounded-lg">
+                                <div class="text-xs text-gray-400">Notes</div>
+                                <p class="text-xs">{{ $signal->notes }}</p>
                             </div>
                         </div>
 
-                        <!-- Trade Images -->
-                        <div class="grid grid-cols-2 gap-2">
-                            @forelse ($signal->images as $image)
-                                <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
-                                    class="rounded-lg w-full h-20 object-cover" />
-                            @empty
-
-                            @endforelse
-                        </div>
-
-
-                        <!-- Additional Details -->
-                        <div class="grid grid-cols-4 gap-2 text-xs">
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">TF</div>
-                                <div class="font-semibold">{{ $signal->time_frame }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">RRR</div>
-                                <div class="font-semibold">{{ number_format($signal->rrr, 2) }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">Valid</div>
-                                <div class="font-semibold">{{ $signal->validity }}</div>
-                            </div>
-                            <div class="bg-gray-700 p-1.5 rounded">
-                                <div class="text-gray-400">Profit</div>
-                                <div class="font-semibold text-green-500">{{ number_format($signal->profit_loss, 2) }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Date & Time -->
-                        <div class="flex justify-between text-xs text-gray-400">
-                            <span>Posted:
-                                {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
-                            <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
-                        </div>
-
-
-                        <!-- Notes -->
-                        <div class="bg-gray-700 p-2 rounded-lg">
-                            <div class="text-xs text-gray-400">Notes</div>
-                            <p class="text-xs">{{ $signal->notes }}</p>
-                        </div>
                     </div>
-
-                </div>
             @endforeach
         </div>
 
@@ -637,44 +772,115 @@
             yearDisplay.textContent = currentYear;
         }
 
-        function applyFilter() {
-            // Get the selected 'From Date' and 'To Date'
-            const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
+        // document.addEventListener('DOMContentLoaded', function () {
+        //   applyFilter(); // Auto-submit on page load
+        // });
 
-            console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
+        // function applyFilter(isOnLoad = false) {
+        //     // Get the selected 'From Date' and 'To Date'
+        //     const fromDate = document.getElementById('fromDate').value;
+        //     const toDate = document.getElementById('toDate').value;
 
-            console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
+        //     console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
 
-            // Format the dates to display the month and year
-            const fromDateObj = new Date(fromDate);
-            const toDateObj = new Date(toDate);
+        //     console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
 
-            const options = { year: 'numeric', month: 'long' };
-            const fromDateFormatted = fromDateObj.toLocaleDateString('en-US', options);
-            const toDateFormatted = toDateObj.toLocaleDateString('en-US', options);
+        //     // Format the dates to display the month and year
+        //     const fromDateObj = new Date(fromDate);
+        //     const toDateObj = new Date(toDate);
 
-            // Update the text content of the <p> element with the formatted date range
-            const dateRangeElement = document.querySelector('.fromtodate');
-            dateRangeElement.textContent = `${fromDateFormatted} - ${toDateFormatted}`;
+        //     const options = { year: 'numeric', month: 'long' };
+        //     const fromDateFormatted = fromDateObj.toLocaleDateString('en-US', options);
+        //     const toDateFormatted = toDateObj.toLocaleDateString('en-US', options);
 
-            // Send a GET request with query parameters
-            fetch(`/fetch-top-packages?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json', // Add proper headers
-                },
-            })
-                .then(response => response.json())  // Parse the JSON response
-                .then(data => {
-                    console.log('Filtered Data:', data);
-                    // Update the UI with the filtered data and average win rate
-                    displayPackages(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching top packages:', error);
-                });
-        }
+        //     // Update the text content of the <p> element with the formatted date range
+        //     const dateRangeElement = document.querySelector('.fromtodate');
+        //     dateRangeElement.textContent = `${fromDateFormatted} - ${toDateFormatted}`;
+
+        //     // Send a GET request with query parameters
+        //     fetch(`/fetch-top-packages?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`, {
+        //         method: 'GET',
+        //         headers: {
+        //             'Content-Type': 'application/json', // Add proper headers
+        //         },
+        //     })
+        //         .then(response => response.json())  // Parse the JSON response
+        //         .then(data => {
+        //             console.log('Filtered Data:', data);
+        //             // Update the UI with the filtered data and average win rate
+        //             displayPackages(data);
+        //         })
+        //         .catch(error => {
+        //             console.error('Error fetching top packages:', error);
+        //         });
+        // }
+
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+    // Auto-submit on page load with last six months
+    setDefaultDateRange();
+    applyFilter(true);
+});
+
+function setDefaultDateRange() {
+    let fromDateInput = document.getElementById('fromDate');
+    let toDateInput = document.getElementById('toDate');
+
+    if (fromDateInput && toDateInput) {
+        let today = new Date();
+        let sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(today.getMonth() - 5);
+
+        fromDateInput.value = sixMonthsAgo.toISOString().slice(0, 10);
+        toDateInput.value = today.toISOString().slice(0, 10);
+    }
+}
+
+function applyFilter(isOnLoad = false) {
+    // Get the selected 'From Date' and 'To Date'
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+     // Extract username from the URL
+     const pathSegments = window.location.pathname.split('/');
+    const username = pathSegments[pathSegments.length - 1]; // Get last segment
+
+    console.log(`Username: ${username}`);
+    console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
+
+    console.log(`From Date: ${fromDate}, To Date: ${toDate}`);
+
+    // Format the dates to display the month and year
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    const options = { year: 'numeric', month: 'long' };
+    const fromDateFormatted = fromDateObj.toLocaleDateString('en-US', options);
+    const toDateFormatted = toDateObj.toLocaleDateString('en-US', options);
+
+    // Update the text content of the <p> element with the formatted date range
+    const dateRangeElement = document.querySelector('.fromtodate');
+    if (dateRangeElement) {
+        dateRangeElement.textContent = `${fromDateFormatted} - ${toDateFormatted}`;
+    }
+
+    // Send a GET request with query parameters
+    fetch(`/fetch-top-packages?username=${encodeURIComponent(username)}&from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then(response => response.json())  // Parse the JSON response
+        .then(data => {
+            console.log('Filtered Data:', data);
+            // Update the UI with the filtered data and average win rate
+            displayPackages(data);
+        })
+        .catch(error => {
+            console.error('Error fetching top packages:', error);
+        });
+}
 
         function displayPackages(data) {
             // alert(data.average_win_rate);

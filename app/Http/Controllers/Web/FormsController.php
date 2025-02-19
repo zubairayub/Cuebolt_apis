@@ -21,14 +21,14 @@ class FormsController extends Controller
     // View package form with market type and subscription type
     public function viewPackageForm()
     {
-        $marketTypes = TradingMarket::all();
+         $marketTypes = TradingMarket::all();
         $subscriptionTypes = Duration::all();
         return view('forms.add_package', compact('marketTypes', 'subscriptionTypes'));
     }
 
     public function viewSignalForm()
     {
-        // Get authenticated user's packages (id & name)
+               // Get authenticated user's packages (id & name)
         $userPackages = Package::where('user_id', Auth::id())->select('id', 'name')->get();
         $marketpair = MarketPair::all();
         $tradetype = TradeType::all();

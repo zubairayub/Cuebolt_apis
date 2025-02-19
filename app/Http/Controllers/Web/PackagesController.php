@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Package; // Import the Package model
+use App\Models\User; // Import the Package model
 use Stripe\Stripe;
 use Stripe\Product;
 use Stripe\Price;
@@ -259,10 +260,7 @@ class PackagesController extends Controller
     public function store(Request $request)
     {
 
-        if (!Auth::check()) {
-            // Redirect for web requests
-            return redirect()->route('package.addform')->with('error', 'Unauthorized. Please log in.');
-        }
+
 
         // Log the incoming request data
         Log::channel('package_logs')->info('Incoming Request:', [
@@ -683,12 +681,20 @@ class PackagesController extends Controller
 
     public function fetchTopPackages(Request $request)
     {
+        $username = $request->input('username');
+        // Find the user by username
+        $user = User::where('username', $username)->first();
+
+        // If the user does not exist, return an error response
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
         // Retrieve the 'from_date' and 'to_date' from the request
         $fromDate = $request->input('from_date');
         $toDate = $request->input('to_date');
 
-        // Start with the base query for active packages
-        $query = Package::where('status', 1);
+        // Start with the base query for active packages belonging to the user
+        $query = Package::where('user_id', $user->id);
 
         // Filter packages by the date range if provided
         if ($fromDate && $toDate) {

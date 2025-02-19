@@ -37,9 +37,10 @@ use App\Http\Controllers\Web\FirebaseController;
 
 Route::get('/', [WelcomeScreenController::class, 'home'])->name('home');
 
+
+
 Route::get('/packages-list', [WelcomeScreenController::class, 'packages_list'])->name('packages.list');
 
-Route::get('/trader-dashboard', [TraderDashboardController::class, 'showDashboard'])->name('trader.dashboard');
 
 Route::post('/logout', [ApiController::class, 'logout'])->name('logout');
 
@@ -90,10 +91,14 @@ Route::middleware('auth')->group(function () {
 });
 
 // Dashboard Routes
-Route::middleware('auth')->group(function () {
+Route::middleware('auth.redirect')->group(function () {
     // Route::get('/trader/dashboard', [DashboardController::class, 'showTraderDashboard']);
+    
     // Route::get('/user/dashboard', [DashboardController::class, 'showUserDashboard']);
 });
+
+Route::get('/trader-dashboard/{username}', [TraderDashboardController::class, 'showDashboard'])->name('trader.dashboard');
+
 
 // User Reviews Routes
 Route::middleware('auth')->group(function () {
@@ -105,7 +110,7 @@ Route::resource('durations', DurationController::class);
 
 // Package Routes
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth.redirect')->group(function () {
     Route::resource('packages', PackagesController::class);
     Route::post('all/my_packages_traders', [PackagesController::class, 'getMyPackagesTraders']);
     Route::get('/package/add', [FormsController::class, 'viewPackageForm'])->name('package.addform');

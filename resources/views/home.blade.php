@@ -160,14 +160,15 @@
                 <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
                     <!-- Trader Profile -->
                     <div class="flex items-center mb-4">
-                        <img src="{{ $package->userProfilelink->profile_picture
+                       <a href="{{ route('trader.dashboard', ['username' => $package->user->username]) }}">
+                       <img src="{{ $package->userProfilelink->profile_picture
                 ? asset('storage/' . $package->userProfilelink->profile_picture)
                 : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format' }}"
-                            alt="{{ $package->userProfilelink->user->name ?? 'Trader' }}" class="w-12 h-12 rounded-full mr-4" />
+                            alt="{{ $package->userProfilelink->user->name ?? 'Trader' }}" class="w-12 h-12 rounded-full mr-4" /></a>
                         <div>
                             <h3 class="text-xl font-bold">{{ $package->name }}</h3>
                             <div class="flex items-center">
-                                <span class="text-gray-400 mr-2">{{ $package->user->username }}</span>
+                                <span class="text-gray-400 mr-2"><a href="{{ route('trader.dashboard', ['username' => $package->user->username]) }}">{{ $package->user->username }}</a></span>
                                 <div class="flex items-center text-yellow-500">
                                     <i class="lucide-star mr-1"></i>
                                     @if ($package->userProfilelink->rating > 0)
@@ -220,8 +221,8 @@
 
                     <!-- Active Hours -->
                     <!-- <div class="text-sm text-gray-400 mb-6">
-                                                                                                                                                                                                    <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
-                                                                                                                                                                                                  </div> -->
+                                                                                                                                                                                                                                            <span class="font-semibold">Active Hours:</span> 8:00 AM - 4:00 PM EST
+                                                                                                                                                                                                                                          </div> -->
 
                     <!-- Price and Subscribers -->
                     <div class="flex justify-between items-center mb-6">
@@ -260,20 +261,23 @@
                 <!-- Trader Card 1 -->
 
                 @foreach($topTraders as $trader)
-                    <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                        <img src="{{ $trader->profile_picture }}" alt="{{ $trader->username }}"
-                            class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-primary">
-                        <h3 class="text-xl font-bold text-center mb-2">{{ $trader->user->username }}</h3>
-                        <div class="flex justify-between text-gray-400 mb-2">
-                            <span>Signals:</span>
-                            <span>{{ number_format($trader->user->trades->count()) }}</span>
+                        <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
 
+                        <a href="{{ route('trader.dashboard', ['username' => $trader->user->username]) }}">  <img src="{{ $package->userProfilelink->profile_picture
+                    ? asset('storage/' . $package->userProfilelink->profile_picture)
+                    : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format' }}"
+                                alt="{{ $trader->username }}" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-primary">
+                            <h3 class="text-xl font-bold text-center mb-2">{{ $trader->user->username }}</a></h3>
+                            <div class="flex justify-between text-gray-400 mb-2">
+                                <span>Signals:</span>
+                                <span>{{ number_format($trader->user->trades->count()) }}</span>
+
+                            </div>
+                            <div class="flex justify-between text-gray-400">
+                                <span>Success Rate:</span>
+                                <span class="text-primary">{{ $trader->success_rate }}%</span>
+                            </div>
                         </div>
-                        <div class="flex justify-between text-gray-400">
-                            <span>Success Rate:</span>
-                            <span class="text-primary">{{ $trader->success_rate }}%</span>
-                        </div>
-                    </div>
                 @endforeach
 
 
@@ -297,107 +301,168 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Signal Card 1 -->
                 @foreach($topSignals as $signal)
-                    <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                        <!-- Trader & Package Info -->
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center">
-                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
-                                    alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
-                                <div>
-                                    <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3>
-                                    <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
-                                </div>
-                            </div>
-                            <!-- <button
-                                                                                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                                                                                                <span>Follow</span>
-                                                                                            </button> -->
-
-                            <button
-                                onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
-                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                                <span>Follow Trade</span>
-                            </button>
-                        </div>
-
-                        <!-- Trade Details -->
-                        <div class="space-y-3">
-                            <!-- Basic Info -->
-                            <div class="flex justify-between items-center">
-                                <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
-                                <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
-                            </div>
-
-                            <!-- Entry/TP/SL Grid -->
-                            <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
-                                <div>
-                                    <div class="text-xs text-gray-400">Entry</div>
-                                    <div class="font-semibold">
-                                        {{ number_format($signal->entry_price, 2) }}
-
+                        <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
+                            <!-- Trader & Package Info -->
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                <a href="{{ route('trader.dashboard', ['username' => $trader->user->username]) }}"> <img src="{{ $package->userProfilelink->profile_picture
+                    ? asset('storage/' . $package->userProfilelink->profile_picture)
+                    : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format' }}"
+                                        alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
+                                    <div>
+                                        <h3 class="font-bold text-sm">{{ $signal->package->user->username }}</h3></a>
+                                        <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <div class="text-xs text-gray-400">TP</div>
-                                    <div class="font-semibold text-green-500">
-                                        {{ number_format($signal->take_profit, 2) }}
+                                <!-- <button
+                                                                                                                                            class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                                                                                                                            <span>Follow</span>
+                                                                                                                                        </button> -->
+
+                                <button
+                                    onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
+                                    class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
+
+                                    <span>Follow Trade</span>
+                                </button>
+                            </div>
+
+                            <!-- Trade Details -->
+                            <div class="space-y-3">
+                                <!-- Basic Info -->
+                                <div class="flex justify-between items-center">
+                                    <span class="text-yellow-500 font-semibold text-sm">{{ $signal->marketPair->symbol }}</span>
+                                    <span class="bg-green-500 text-xs px-2 py-0.5 rounded">{{ $signal->tradeType->name }}</span>
+                                </div>
+
+                                <!-- Entry/TP/SL Grid -->
+                                <!-- <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                                                            <div>
+                                                                                <div class="text-xs text-gray-400">Entry</div>
+                                                                                <div class="font-semibold">
+                                                                                    {{ number_format($signal->entry_price, 2) }}
+
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="text-xs text-gray-400">TP</div>
+                                                                                <div class="font-semibold text-green-500">
+                                                                                    {{ number_format($signal->take_profit, 2) }}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="text-xs text-gray-400">SL</div>
+                                                                                <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+                                                                            </div>
+                                                                        </div> -->
+                                <div class="grid grid-cols-3 gap-2 bg-gray-700 p-2 rounded-lg text-sm">
+                                    <!-- Entry Price -->
+                                    <div>
+                                        <div class="text-xs text-gray-400">Entry</div>
+                                        <div class="font-semibold">
+                                            {{ number_format($signal->entry_price, 2) }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Take Profit with Percentage Difference & Tooltip -->
+                                    <div class="relative group">
+                                        <div class="text-xs text-gray-400">TP</div>
+                                        <div class="font-semibold text-green-500">
+                                            {{ number_format($signal->take_profit, 2) }}
+                                            <span class="text-xs text-green-400 block">
+                                                (+{{ number_format($signal->percentageDifferencetp, 2) }}%)
+                                            </span>
+                                        </div>
+                                        <!-- Tooltip -->
+                                        <div
+                                            class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            TP is {{ number_format($signal->percentageDifferencetp, 2) }}% above Entry Price
+                                        </div>
+                                    </div>
+
+                                    <!-- Stop Loss with Percentage Difference & Tooltip -->
+                                    <div class="relative group">
+                                        <div class="text-xs text-gray-400">SL</div>
+                                        <div class="font-semibold text-red-500">
+                                            {{ number_format($signal->stop_loss, 2) }}
+                                            <span class="text-xs text-red-400 block">
+                                                ({{ number_format($signal->percentageDifferencesl, 2) }}%)
+                                            </span>
+                                        </div>
+                                        <!-- Tooltip -->
+                                        <div
+                                            class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            SL is {{ number_format($signal->percentageDifferencesl, 2) }}% below Entry Price
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <div class="text-xs text-gray-400">SL</div>
-                                    <div class="font-semibold text-red-500">{{ number_format($signal->stop_loss, 2) }}</div>
+
+
+                                <!-- Trade Images -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    @forelse ($signal->images as $image)
+                                        <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
+                                            class="rounded-lg w-full h-20 object-cover" />
+                                    @empty
+
+                                    @endforelse
+                                </div>
+
+
+                                <!-- Additional Details -->
+                                <div class="grid grid-cols-4 gap-2 text-xs">
+                                    <div class="bg-gray-700 p-1.5 rounded">
+                                        <div class="text-gray-400">TF</div>
+                                        <div class="font-semibold">{{ $signal->time_frame }}</div>
+                                    </div>
+                                    <div class="bg-gray-700 p-1.5 rounded relative group">
+                                        <div class="text-gray-400">Predicted Risk-Reward</div>
+                                        <div class="font-semibold text-blue-500">
+                                            {{ number_format($signal->rrr, 2) }}
+                                        </div>
+
+                                        <!-- Tooltip for explanation -->
+                                        <div
+                                            class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            RRR shows potential reward vs risk. Higher is better!
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-700 p-1.5 rounded relative group">
+                                        <div class="text-gray-400">Achieved RRR</div>
+                                        <div class="font-semibold">
+                                            {{ $signal->rrr !== null ? number_format($signal->rrr, 2) : 'Trade is Live' }}
+                                        </div>
+                                        <div
+                                            class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-1 w-max bg-black text-white text-xs rounded-lg py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {{ $signal->rrr !== null ? 'Achieved RRR represents the actual risk-to-reward ratio after execution.' : 'Trade is still live, RRR will be calculated after completion.' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-700 p-1.5 rounded">
+                                        <div class="text-gray-400">Valid</div>
+                                        <div class="font-semibold">{{ $signal->validity }}</div>
+                                    </div>
+
+
+                                </div>
+
+                                <!-- Date & Time -->
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span>Posted:
+                                        {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
+                                    <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
+                                </div>
+
+
+                                <!-- Notes -->
+                                <div class="bg-gray-700 p-2 rounded-lg">
+                                    <div class="text-xs text-gray-400">Notes</div>
+                                    <p class="text-xs">{{ $signal->notes }}</p>
                                 </div>
                             </div>
 
-                            <!-- Trade Images -->
-                            <div class="grid grid-cols-2 gap-2">
-                                @forelse ($signal->images as $image)
-                                    <img src="{{ asset('storage/' . $image->image_path) }}" alt="Trade Chart"
-                                        class="rounded-lg w-full h-20 object-cover" />
-                                @empty
-
-                                @endforelse
-                            </div>
-
-
-                            <!-- Additional Details -->
-                            <div class="grid grid-cols-4 gap-2 text-xs">
-                                <div class="bg-gray-700 p-1.5 rounded">
-                                    <div class="text-gray-400">TF</div>
-                                    <div class="font-semibold">{{ $signal->time_frame }}</div>
-                                </div>
-                                <div class="bg-gray-700 p-1.5 rounded">
-                                    <div class="text-gray-400">RRR</div>
-                                    <div class="font-semibold">{{ number_format($signal->rrr, 2) }}</div>
-                                </div>
-                                <div class="bg-gray-700 p-1.5 rounded">
-                                    <div class="text-gray-400">Valid</div>
-                                    <div class="font-semibold">{{ $signal->validity }}</div>
-                                </div>
-                                <div class="bg-gray-700 p-1.5 rounded">
-                                    <div class="text-gray-400">Profit</div>
-                                    <div class="font-semibold text-green-500">{{ number_format($signal->profit_loss, 2) }}</div>
-                                </div>
-                            </div>
-
-                            <!-- Date & Time -->
-                            <div class="flex justify-between text-xs text-gray-400">
-                                <span>Posted:
-                                    {{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('Y-m-d H:i:s') }}</span>
-                                <span>{{ \Carbon\Carbon::parse($signal->created_at)->utc()->format('H:i') }} UTC</span>
-                            </div>
-
-
-                            <!-- Notes -->
-                            <div class="bg-gray-700 p-2 rounded-lg">
-                                <div class="text-xs text-gray-400">Notes</div>
-                                <p class="text-xs">{{ $signal->notes }}</p>
-                            </div>
                         </div>
-
-                    </div>
                 @endforeach
 
                 <!-- Additional signal cards would follow the same pattern -->
@@ -500,13 +565,13 @@
                         console.error('Error submitting trade:', error);
                         // Optionally, you can show an error toast here if desired
                     })
-                        .finally(() => {
-                    // Re-enable button & reset text after response
-                    if (followBtn) {
-                        followBtn.disabled = false;
-                        followBtn.innerHTML = "Follow Trade";
-                    }
-                });
+                    .finally(() => {
+                        // Re-enable button & reset text after response
+                        if (followBtn) {
+                            followBtn.disabled = false;
+                            followBtn.innerHTML = "Follow Trade";
+                        }
+                    });
             }
 
             // Add event listeners for real-time calculations

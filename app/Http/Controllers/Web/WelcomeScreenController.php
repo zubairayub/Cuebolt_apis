@@ -8,6 +8,7 @@ use App\Models\WelcomeScreen;
 use App\Models\Package;
 use App\Models\Trade;
 use App\Models\UserProfile;
+use Illuminate\Support\Facades\Auth;
 class WelcomeScreenController extends Controller
 {
     // Fetch welcome screen data
@@ -104,47 +105,76 @@ class WelcomeScreenController extends Controller
             ->with('user')
             ->get();
 
-        // Get top signals (trades) based on highest profit/loss percentage
         $topSignals = Trade::orderByDesc('profit_loss')
-            ->take(20)
+            ->take(8)
             ->with(['package', 'marketPair', 'tradeType'])
-            ->get();
+            ->get()
+            ->map(function ($trade) {
+                // Avoid division by zero
+                $trade->percentageDifferencetp = ($trade->entry_price > 0)
+                    ? (($trade->take_profit - $trade->entry_price) / $trade->entry_price) * 100
+                    : 0;
+
+                $trade->percentageDifferencesl = ($trade->entry_price > 0)
+                    ? (($trade->stop_loss - $trade->entry_price) / $trade->entry_price) * 100
+                    : 0;
+
+                // Calculate Risk-Reward Ratio (RRR)
+                if ($trade->entry_price > 0 && ($trade->entry_price - $trade->stop_loss) > 0) {
+                    $trade->prrr = ($trade->take_profit - $trade->entry_price) / ($trade->entry_price - $trade->stop_loss);
+                } else {
+                    $trade->prrr = 0; // Default if invalid
+                }
+
+                return $trade;
+            });
+
+
+
+
 
         // Return data to the home view
         return view('home', compact('topPackages', 'topTraders', 'topSignals'));
     }
 
     public function packages_list()
-    {
-        // Get top packages based on highest win percentage
-        $topPackages = Package::where('status', 1)
-            ->orderByDesc('win_percentage')
-            ->get();
+{
+    
 
-      
-        // Return data to the home view
-        return view('inner-pages.packages-list', compact('topPackages'));
-    }
+    // Get top packages based on highest win percentage
+    $topPackages = Package::where('status', 1)
+        ->orderByDesc('win_percentage')
+        ->get();
+
+    // Return data to the packages list view
+    return view('inner-pages.packages-list', compact('topPackages'));
+}
+
 
     public function trader_dashboard()
     {
+         // Check if user is authenticated
+    if (!Auth::check()) {
+        return redirect()->route('login.user')->with('error', 'You must be logged in to view packages.');
+    }
+
         // Get top packages based on highest win percentage
         $topPackages = Package::where('status', 1)
             ->orderByDesc('win_percentage')
             ->get();
-    
+
         // Check if $topPackages is not empty and is an instance of collection
         if ($topPackages->isEmpty()) {
             // Handle the case where there are no packages
             $topPackages = collect(); // You can return an empty collection
         }
-    
+
         // Return data to the home view
         return view('inner-pages.trader-dashboard', compact('topPackages'));
     }
-    
 
 
-    
+
+
 
 }

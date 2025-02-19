@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\FirebaseAuthMiddleware;
+use App\Http\Middleware\RedirectIfNotAuthenticated;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -13,11 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'firebase.auth' => FirebaseAuthMiddleware::class,
+            'auth.redirect' => RedirectIfNotAuthenticated::class, 
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
+    

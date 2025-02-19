@@ -19,20 +19,23 @@ class TraderDashboardController extends Controller
     /**
      * Show the trader's dashboard.
      */
-    public function showDashboard(Request $request)
+    public function showDashboard(Request $request, $username)
     {
         // Get the authenticated trader
-        $trader = Auth::user();
-    
-        // Ensure the trader exists
-        if (!$trader) {
-            return redirect()->route('login')->with('error', 'You must be logged in to access the dashboard.');
-        }
-    
+         // Find the user by username
+         $trader = User::where('username', $username)->first();
+
+         // If the user does not exist, return an error response
+         if (!$trader) {
+             return response()->json(['error' => 'User not found'], 404);
+         }
+
+
+
         // User Information Overview
         $profilePicture = optional($trader->profile)->profile_picture ?? asset('default-avatar.png');
         $name = $trader->username ?? 'Unknown Trader';
-    
+
         // Use try-catch blocks for potential exceptions in helper methods
         try {
             $profile = $this->getTraderProfile($trader) ?? collect();
@@ -55,11 +58,11 @@ class TraderDashboardController extends Controller
             $challengeProgress = collect();
             $rating = 0;
         }
-    
+
         // Ensure these variables are always iterable
         $topSignals = collect($signalsAndTopPerformer['recent_signals'] ?? []);
         $topPerformingSignals = collect($signalsAndTopPerformer['top_performer'] ?? []);
-    
+
         // Handle empty cases safely
         if (!$topSignals instanceof \Illuminate\Support\Collection) {
             $topSignals = collect();
@@ -67,7 +70,7 @@ class TraderDashboardController extends Controller
         if (!$topPerformingSignals instanceof \Illuminate\Support\Collection) {
             $topPerformingSignals = collect();
         }
-    
+
         // Get top packages with safe handling
         try {
             $topPackages = Package::where('status', 1)
@@ -78,7 +81,7 @@ class TraderDashboardController extends Controller
             \Log::error('Error fetching top packages: ' . $e->getMessage());
             $topPackages = collect();
         }
-    
+
         // Return data to the Blade view
         return view('inner-pages.trader-dashboard', compact(
             'profilePicture',
@@ -95,7 +98,7 @@ class TraderDashboardController extends Controller
             'topPackages'
         ));
     }
-    
+
 
 
 
@@ -308,28 +311,92 @@ class TraderDashboardController extends Controller
     {
         try {
             // Fetch 3 most recent signals
-            $recentSignals = Trade::whereIn('package_id', function ($query) use ($trader) {
-                $query->select('id')
-                    ->from('packages')
-                    ->where('user_id', $trader->id);
-            })
-                ->orderBy('created_at', 'desc')
-                ->take(3)
-                ->get();
+                $recentSignals = Trade::whereIn('package_id', function ($query) use ($trader) {
+                    $query->select('id')
+                        ->from('packages')
+                        ->where('user_id', $trader->id);
+                })
+                ->orderByDesc('created_at')
+                ->with(['package', 'marketPair', 'tradeType'])
+                ->take(3) // Limit to avoid excessive queries
+                ->get()
+                ->map(function ($trade) {
+                    // Avoid division by zero
+                    $trade->percentageDifferencetp = ($trade->entry_price > 0)
+                        ? (($trade->take_profit - $trade->entry_price) / $trade->entry_price) * 100
+                        : 0;
+            
+                    $trade->percentageDifferencesl = ($trade->entry_price > 0)
+                        ? (($trade->stop_loss - $trade->entry_price) / $trade->entry_price) * 100
+                        : 0;
+            
+                    // Calculate Risk-Reward Ratio (RRR)
+                    if ($trade->entry_price > 0 && ($trade->entry_price - $trade->stop_loss) > 0) {
+                        $trade->prrr = ($trade->take_profit - $trade->entry_price) / ($trade->entry_price - $trade->stop_loss);
+                    } else {
+                        $trade->prrr = 0; // Default if invalid
+                    }
+            
+                    return $trade;
+                });
+            
 
+          
             // Fetch all trades for top performance evaluation
             $trades = Trade::whereIn('package_id', function ($query) use ($trader) {
                 $query->select('id')
                     ->from('packages')
                     ->where('user_id', $trader->id);
             })
-                ->get();
+            ->orderByDesc('created_at')
+            ->with(['package', 'marketPair', 'tradeType'])
+            ->take(3) // Limit to avoid excessive queries
+            ->get()
+            ->map(function ($trade) {
+                // Avoid division by zero
+                $trade->percentageDifferencetp = ($trade->entry_price > 0)
+                    ? (($trade->take_profit - $trade->entry_price) / $trade->entry_price) * 100
+                    : 0;
+        
+                $trade->percentageDifferencesl = ($trade->entry_price > 0)
+                    ? (($trade->stop_loss - $trade->entry_price) / $trade->entry_price) * 100
+                    : 0;
+        
+                // Calculate Risk-Reward Ratio (RRR)
+                if ($trade->entry_price > 0 && ($trade->entry_price - $trade->stop_loss) > 0) {
+                    $trade->prrr = ($trade->take_profit - $trade->entry_price) / ($trade->entry_price - $trade->stop_loss);
+                } else {
+                    $trade->prrr = 0; // Default if invalid
+                }
+        
+                return $trade;
+            });
+
+
+            foreach ($recentSignals as $trade) {
+                $symbol = $trade->marketPair->symbol ?? null; // Assuming `market_pair` contains the symbol
+
+                $entryPrice = $trade->entry_price;
+
+                if ($symbol && $entryPrice) {
+                    $currentPrice = $this->getLivePriceFromBinance($symbol);
+
+                            // Add current price to the trade array
+                            $trade['current_price'] = $currentPrice;
+                            $recentSignalswithprice[] = $trade;
+
+                    
+                }
+            }
+
+            //dd($recentSignalswithprice);
+
 
             // Calculate top-performing signal
             $topPerformingSignal = $this->getTopPerformingSignal($trades);
 
             return [
-                'recent_signals' => $recentSignals,
+                'recent_signals' => $recentSignalswithprice,
                 'top_performer' => $topPerformingSignal,
             ];
         } catch (\Exception $e) {

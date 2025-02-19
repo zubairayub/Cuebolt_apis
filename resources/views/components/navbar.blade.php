@@ -24,9 +24,11 @@
                         class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Packages</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Signals</a>
                     <a href="#" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Traders</a>
-                    <a href="{{ route('trader.dashboard') }}" class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Dashboard</a>
-                    
-                     
+                    @auth
+                    <a href="{{ route('trader.dashboard', ['username' => Auth::user()->username]) }}"
+                        class="text-gray-300 hover:text-yellow-500 transition-colors duration-200">Dashboard</a>
+    @endauth
+
                     @if(Auth::check()) <a href="{{ route('logout') }}"
                             class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"> Logout </a>
@@ -69,12 +71,14 @@
                     class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200">
                     Traders
                 </a>
-                <a href="{{ route('trader.dashboard') }}"
-                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200">
-                    Dashboard
-                </a>
+                @auth
+                    <a href="{{ route('trader.dashboard', ['username' => Auth::user()->username]) }}"
+                        class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200">
+                        Dashboard
+                    </a>
+                @endauth
                 <div class="px-3 pt-4">
-                @if(Auth::check()) <a href="{{ route('logout') }}"
+                    @if(Auth::check()) <a href="{{ route('logout') }}"
                             class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"> Logout </a>
                         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
