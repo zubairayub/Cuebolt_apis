@@ -203,8 +203,9 @@ class UpdateTradeProfitLoss extends Command
 
                         // Calculate Risk-Reward Ratio (RRR)
                         $rrr = ($takeProfit - $entryPrice) / ($entryPrice - $stopLoss);
+
                         if (is_null($trade->profit_loss) || $trade->profit_loss === '') {
-                            Log::channel('trades_logs')->info("calcution Trade ID {$trade->id}: {$profitLoss}% ");
+                            Log::channel('trades_logs')->info("calcution Trade ID {$trade->id}: {$profitLoss}%: Price Live {$currentPrice} ");
                             if ($tradetype === 'BUY') {
                                 // Condition for "buy" trade type
                                 if ($currentPrice <= $entryPrice) {
