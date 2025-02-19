@@ -447,21 +447,88 @@ class TraderDashboardController extends Controller
 
     private function getLivePriceFromBinance($symbol)
     {
-        try {
-            $binanceSymbol = str_replace('/', '', strtoupper($symbol));
-            $apiUrl = "https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol);
+        // try {
+        //     $binanceSymbol = str_replace('/', '', strtoupper($symbol));
+        //     $apiUrl = "https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol);
 
+        //     $response = file_get_contents($apiUrl);
+        //     $data = json_decode($response, true);
+
+        //     if (isset($data['price'])) {
+        //         return (float) $data['price'];
+        //     }
+        // } catch (\Exception $e) {
+        //     \Log::error("Error fetching live price for symbol {$symbol}: " . $e->getMessage());
+        // }
+
+        // return null; // Return null if unable to fetch price
+
+
+
+
+         // Convert symbol for consistency
+    $binanceSymbol = str_replace('/', '', strtoupper($symbol));
+    
+    // List of APIs to try
+    $apiUrls = [
+        // Binance
+        "https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol),
+        
+        // CoinGecko
+        "https://api.coingecko.com/api/v3/simple/price?ids=" . strtolower($symbol) . "&vs_currencies=usd",
+
+        // CryptoCompare
+        "https://min-api.cryptocompare.com/data/price?fsym=" . strtoupper($symbol) . "&tsyms=USDT",
+        
+        // KuCoin
+        "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=" . strtoupper($symbol) . "-USDT",
+
+        // Bitfinex
+        "https://api-pub.bitfinex.com/v2/tickers?symbols=t" . strtoupper($symbol) . "USDT",
+
+        // Kraken
+        "https://api.kraken.com/0/public/Ticker?pair=" . strtoupper($symbol) . "USDT",
+        
+        // Gemini
+        "https://api.gemini.com/v1/pubticker/" . strtoupper($symbol) . "USD",
+
+        // Nomics
+        "https://api.nomics.com/v1/currencies/ticker?key=YOUR_API_KEY&ids=" . strtolower($symbol) . "&convert=USD",
+
+        // Messari
+        "https://data.messari.io/api/v1/assets/" . strtolower($symbol) . "/metrics/market-data"
+    ];
+
+    foreach ($apiUrls as $apiUrl) {
+        try {
             $response = file_get_contents($apiUrl);
             $data = json_decode($response, true);
 
+            // Check if price exists for this API and return it
             if (isset($data['price'])) {
                 return (float) $data['price'];
             }
+            
+            // Special handling for APIs that may return data in different formats
+            if (isset($data[0]['price'])) { // Bitfinex and others may return data in a list
+                return (float) $data[0]['price'];
+            }
+            
+            if (isset($data['ticker']['last'])) { // Kraken may return data in a nested format
+                return (float) $data['ticker']['last'];
+            }
+
+            // Special handling for Nomics
+            if (isset($data[0]['price'])) {
+                return (float) $data[0]['price'];
+            }
+
         } catch (\Exception $e) {
             \Log::error("Error fetching live price for symbol {$symbol}: " . $e->getMessage());
         }
+    }
 
-        return null; // Return null if unable to fetch price
+    return null; // Return null if no API could fetch the price
     }
 
 
