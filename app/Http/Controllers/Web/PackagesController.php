@@ -730,7 +730,7 @@ class PackagesController extends Controller
                 // Calculate win/loss count (Assuming 'profit_loss' is positive for win, negative for loss)
                 if ($trade->profit_loss > 0) {
                     $winCount++;
-                } else {
+                } elseif ($trade->profit_loss < 0) {
                     $lossCount++;
                 }
 
