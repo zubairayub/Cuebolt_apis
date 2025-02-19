@@ -445,7 +445,7 @@ class TraderDashboardController extends Controller
     }
 
 
-    private function getLivePriceFromBinance($symbol)
+    private function getLivePriceFromBinance($symbol,$base_currency,$quote_currency)
     {
         // try {
         //     $binanceSymbol = str_replace('/', '', strtoupper($symbol));
@@ -474,29 +474,27 @@ class TraderDashboardController extends Controller
         // Binance
         "https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol),
         
-        // CoinGecko
-        "https://api.coingecko.com/api/v3/simple/price?ids=" . strtolower($symbol) . "&vs_currencies=usd",
-
+        
         // CryptoCompare
-        "https://min-api.cryptocompare.com/data/price?fsym=" . strtoupper($symbol) . "&tsyms=USDT",
+        "https://min-api.cryptocompare.com/data/price?fsym=" . strtoupper($base_currency) . "&tsyms=".$quote_currency,
         
         // KuCoin
-        "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=" . strtoupper($symbol) . "-USDT",
+       // "https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=" . strtoupper($symbol) . "-USDT",
 
         // Bitfinex
-        "https://api-pub.bitfinex.com/v2/tickers?symbols=t" . strtoupper($symbol) . "USDT",
+       // "https://api-pub.bitfinex.com/v2/tickers?symbols=t" . strtoupper($symbol) . "USDT",
 
         // Kraken
-        "https://api.kraken.com/0/public/Ticker?pair=" . strtoupper($symbol) . "USDT",
+        "https://api.kraken.com/0/public/Ticker?pair=" . strtoupper($binanceSymbol) ,
         
         // Gemini
-        "https://api.gemini.com/v1/pubticker/" . strtoupper($symbol) . "USD",
+        "https://api.gemini.com/v1/pubticker/" . strtoupper($binanceSymbol),
 
         // Nomics
-        "https://api.nomics.com/v1/currencies/ticker?key=YOUR_API_KEY&ids=" . strtolower($symbol) . "&convert=USD",
+      //  "https://api.nomics.com/v1/currencies/ticker?key=YOUR_API_KEY&ids=" . strtolower($symbol) . "&convert=USD",
 
         // Messari
-        "https://data.messari.io/api/v1/assets/" . strtolower($symbol) . "/metrics/market-data"
+        "https://data.messari.io/api/v1/assets/" . strtolower($base_currency) . "/metrics/market-data"
     ];
 
     foreach ($apiUrls as $apiUrl) {
