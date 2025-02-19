@@ -23,25 +23,62 @@ class TraderDashboardController extends Controller
     {
         // Get the authenticated trader
         $trader = Auth::user();
-
+    
+        // Ensure the trader exists
+        if (!$trader) {
+            return redirect()->route('login')->with('error', 'You must be logged in to access the dashboard.');
+        }
+    
         // User Information Overview
-        $profilePicture = $trader->profile->profile_picture ?? asset('default-avatar.png');
-        $name = $trader->username;
-        $profile = $this->getTraderProfile($trader);
-        $earnings = $this->getTotalEarnings($trader);
-        $signalFollowers = $this->getFollowersCount($trader);
-        $totalSignals = $this->getTotalAndActiveSignals($trader);
-        $successRate = $this->getSignalSuccessRate($trader);
-        $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader);
-        $challengeProgress = $this->getChallengeProgress($trader);
-        $rating = $this->getTraderRating($trader);
-        $topSignals = $signalsAndTopPerformer['recent_signals'];
-        $topPerformingSignals = $signalsAndTopPerformer['top_performer'];
-        $topPackages = Package::where('status', 1)
-            ->where('user_id', $trader->id)  // If applicable, filter based on user's ownership
-            ->orderByDesc('win_percentage')
-            ->get();
-        // DD($trader);
+        $profilePicture = optional($trader->profile)->profile_picture ?? asset('default-avatar.png');
+        $name = $trader->username ?? 'Unknown Trader';
+    
+        // Use try-catch blocks for potential exceptions in helper methods
+        try {
+            $profile = $this->getTraderProfile($trader) ?? collect();
+            $earnings = $this->getTotalEarnings($trader) ?? 0;
+            $signalFollowers = $this->getFollowersCount($trader) ?? 0;
+            $totalSignals = $this->getTotalAndActiveSignals($trader) ?? ['total' => 0, 'active' => 0];
+            $successRate = $this->getSignalSuccessRate($trader) ?? 0;
+            $signalsAndTopPerformer = $this->getSignalsAndTopPerformer($trader) ?? ['recent_signals' => collect(), 'top_performer' => collect()];
+            $challengeProgress = $this->getChallengeProgress($trader) ?? collect();
+            $rating = $this->getTraderRating($trader) ?? 0;
+        } catch (\Exception $e) {
+            // Log the error and assign safe fallback values
+            \Log::error('Error in showDashboard: ' . $e->getMessage());
+            $profile = collect();
+            $earnings = 0;
+            $signalFollowers = 0;
+            $totalSignals = ['total' => 0, 'active' => 0];
+            $successRate = 0;
+            $signalsAndTopPerformer = ['recent_signals' => collect(), 'top_performer' => collect()];
+            $challengeProgress = collect();
+            $rating = 0;
+        }
+    
+        // Ensure these variables are always iterable
+        $topSignals = collect($signalsAndTopPerformer['recent_signals'] ?? []);
+        $topPerformingSignals = collect($signalsAndTopPerformer['top_performer'] ?? []);
+    
+        // Handle empty cases safely
+        if (!$topSignals instanceof \Illuminate\Support\Collection) {
+            $topSignals = collect();
+        }
+        if (!$topPerformingSignals instanceof \Illuminate\Support\Collection) {
+            $topPerformingSignals = collect();
+        }
+    
+        // Get top packages with safe handling
+        try {
+            $topPackages = Package::where('status', 1)
+                ->where('user_id', $trader->id)
+                ->orderByDesc('win_percentage')
+                ->get() ?? collect();
+        } catch (\Exception $e) {
+            \Log::error('Error fetching top packages: ' . $e->getMessage());
+            $topPackages = collect();
+        }
+    
         // Return data to the Blade view
         return view('inner-pages.trader-dashboard', compact(
             'profilePicture',
@@ -58,6 +95,7 @@ class TraderDashboardController extends Controller
             'topPackages'
         ));
     }
+    
 
 
 

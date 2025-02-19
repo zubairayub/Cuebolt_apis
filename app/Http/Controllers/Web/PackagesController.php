@@ -682,100 +682,100 @@ class PackagesController extends Controller
 
 
     public function fetchTopPackages(Request $request)
-{
-    // Retrieve the 'from_date' and 'to_date' from the request
-    $fromDate = $request->input('from_date');
-    $toDate = $request->input('to_date');
+    {
+        // Retrieve the 'from_date' and 'to_date' from the request
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
 
-    // Start with the base query for active packages
-    $query = Package::where('status', 1);
+        // Start with the base query for active packages
+        $query = Package::where('status', 1);
 
-    // Filter packages by the date range if provided
-    if ($fromDate && $toDate) {
-        // Ensure both dates are in the proper format (e.g., 'Y-m-d')
-        $query->whereBetween('created_at', [$fromDate, $toDate]);
-    }
+        // Filter packages by the date range if provided
+        if ($fromDate && $toDate) {
+            // Ensure both dates are in the proper format (e.g., 'Y-m-d')
+            $query->whereBetween('created_at', [$fromDate, $toDate]);
+        }
 
-    // Retrieve the top packages, ordered by win percentage
-    $topPackages = $query->with('trades.marketPair') // Eager load the trades and marketPair relationship
-        ->orderByDesc('win_percentage')
-        ->get();
+        // Retrieve the top packages, ordered by win percentage
+        $topPackages = $query->with('trades.marketPair') // Eager load the trades and marketPair relationship
+            ->orderByDesc('win_percentage')
+            ->get();
 
-    // Initialize variables for calculations
-    $totalTrades = 0;
-    $winCount = 0;
-    $lossCount = 0;
-    $totalWinRate = 0;
-    $totalRRR = 0;
-    $mostTradedPair = null;
-    $bestPerformingPair = null;
-    $pairTradeCounts = [];
-    $pairWinRates = [];
+        // Initialize variables for calculations
+        $totalTrades = 0;
+        $winCount = 0;
+        $lossCount = 0;
+        $totalWinRate = 0;
+        $totalRRR = 0;
+        $mostTradedPair = null;
+        $bestPerformingPair = null;
+        $pairTradeCounts = [];
+        $pairWinRates = [];
 
-    // Loop through the packages to calculate various statistics
-    foreach ($topPackages as $package) {
-        $totalTrades += $package->trades->count();
-        foreach ($package->trades as $trade) {
-            // Calculate win/loss count (Assuming 'profit_loss' is positive for win, negative for loss)
-            if ($trade->profit_loss > 0) {
-                $winCount++;
-            } else {
-                $lossCount++;
-            }
+        // Loop through the packages to calculate various statistics
+        foreach ($topPackages as $package) {
+            $totalTrades += $package->trades->count();
+            foreach ($package->trades as $trade) {
+                // Calculate win/loss count (Assuming 'profit_loss' is positive for win, negative for loss)
+                if ($trade->profit_loss > 0) {
+                    $winCount++;
+                } else {
+                    $lossCount++;
+                }
 
-            // Calculate the total win rate and RRR
-            $totalWinRate += $package->win_percentage;
-            $totalRRR += $package->achieved_rrr;
+                // Calculate the total win rate and RRR
+                $totalWinRate += $package->win_percentage;
+                $totalRRR += $package->achieved_rrr;
 
-            // Count the number of trades for each pair
-            $pair = $trade->marketPair->symbol; // Get the symbol of the market pair (assuming it's available in MarketPair model)
-            if (!isset($pairTradeCounts[$pair])) {
-                $pairTradeCounts[$pair] = 0;
-            }
-            $pairTradeCounts[$pair]++;
+                // Count the number of trades for each pair
+                $pair = $trade->marketPair->symbol; // Get the symbol of the market pair (assuming it's available in MarketPair model)
+                if (!isset($pairTradeCounts[$pair])) {
+                    $pairTradeCounts[$pair] = 0;
+                }
+                $pairTradeCounts[$pair]++;
 
-            // Calculate win rate for each pair
-            if (!isset($pairWinRates[$pair])) {
-                $pairWinRates[$pair] = ['wins' => 0, 'trades' => 0];
-            }
-            $pairWinRates[$pair]['trades']++;
-            if ($trade->profit_loss > 0) {
-                $pairWinRates[$pair]['wins']++;
+                // Calculate win rate for each pair
+                if (!isset($pairWinRates[$pair])) {
+                    $pairWinRates[$pair] = ['wins' => 0, 'trades' => 0];
+                }
+                $pairWinRates[$pair]['trades']++;
+                if ($trade->profit_loss > 0) {
+                    $pairWinRates[$pair]['wins']++;
+                }
             }
         }
-    }
 
-    // Calculate average win rate and average RRR
-    $averageWinRate = $topPackages->count() > 0 ? $totalWinRate / $topPackages->count() : 0;
-    $averageRRR = $topPackages->count() > 0 ? $totalRRR / $topPackages->count() : 0;
+        // Calculate average win rate and average RRR
+        $averageWinRate = $topPackages->count() > 0 ? $totalWinRate / $topPackages->count() : 0;
+        $averageRRR = $topPackages->count() > 0 ? $totalRRR / $topPackages->count() : 0;
 
-    // Find the most traded pair
-    arsort($pairTradeCounts); // Sort by the number of trades in descending order
-    $mostTradedPair = key($pairTradeCounts); // Get the pair with the most trades
+        // Find the most traded pair
+        arsort($pairTradeCounts); // Sort by the number of trades in descending order
+        $mostTradedPair = key($pairTradeCounts); // Get the pair with the most trades
 
-    // Find the best performing pair (highest win rate)
-    $bestPerformingPair = null;
-    $bestWinRate = 0;
-    foreach ($pairWinRates as $pair => $data) {
-        $winRate = $data['wins'] / $data['trades'] * 100; // Calculate win rate as percentage
-        if ($winRate > $bestWinRate) {
-            $bestWinRate = $winRate;
-            $bestPerformingPair = $pair;
+        // Find the best performing pair (highest win rate)
+        $bestPerformingPair = null;
+        $bestWinRate = 0;
+        foreach ($pairWinRates as $pair => $data) {
+            $winRate = $data['wins'] / $data['trades'] * 100; // Calculate win rate as percentage
+            if ($winRate > $bestWinRate) {
+                $bestWinRate = $winRate;
+                $bestPerformingPair = $pair;
+            }
         }
-    }
 
-    // Return the filtered data as JSON, along with additional calculated data
-    return response()->json([
-        'packages' => $topPackages,
-        'average_win_rate' => round($averageWinRate, 2), // Round to 2 decimal places
-        'average_rrr' => round($averageRRR, 2), // Round to 2 decimal places
-        'total_trades' => $totalTrades, // Total number of trades
-        'win_count' => $winCount, // Total wins
-        'loss_count' => $lossCount, // Total losses
-        'most_traded_pair' => $mostTradedPair, // Most traded pair
-        'best_performing_pair' => $bestPerformingPair, // Best performing pair
-        'win_loss_ratio' => $winCount > 0 ? ($lossCount / $winCount) : 0 // Win/Loss ratio
-    ]);
-}
+        // Return the filtered data as JSON, along with additional calculated data
+        return response()->json([
+            'packages' => $topPackages,
+            'average_win_rate' => round($averageWinRate, 2), // Round to 2 decimal places
+            'average_rrr' => round($averageRRR, 2), // Round to 2 decimal places
+            'total_trades' => $totalTrades, // Total number of trades
+            'win_count' => $winCount, // Total wins
+            'loss_count' => $lossCount, // Total losses
+            'most_traded_pair' => $mostTradedPair, // Most traded pair
+            'best_performing_pair' => $bestPerformingPair, // Best performing pair
+            'win_loss_ratio' => $winCount > 0 ? ($lossCount / $winCount) : 0 // Win/Loss ratio
+        ]);
+    }
 
 }
