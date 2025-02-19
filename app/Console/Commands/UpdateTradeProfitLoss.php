@@ -114,6 +114,8 @@ class UpdateTradeProfitLoss extends Command
     // }
 
 
+
+
     //working latest is below
     public function handle()
     {
@@ -134,6 +136,7 @@ class UpdateTradeProfitLoss extends Command
 
         // Define CoinMarketCap API Key
         $apiKey = '1b960532-df19-4600-861d-383dd5514ad1';
+
 
         // Function to fetch market data in chunks of 30 symbols
         function fetchMarketDataInChunks($symbols, $apiKey)
@@ -191,35 +194,84 @@ class UpdateTradeProfitLoss extends Command
                         $entryPrice = (float) $trade->entry_price;
                         $takeProfit = (float) $trade->take_profit;
                         $stopLoss = (float) $trade->stop_loss;
+                        $tradetype = $trade->tradeType->name;
+
+
 
                         // Calculate profit/loss percentage
                         $profitLoss = (($currentPrice - $entryPrice) / $entryPrice) * 100;
 
                         // Calculate Risk-Reward Ratio (RRR)
                         $rrr = ($takeProfit - $entryPrice) / ($entryPrice - $stopLoss);
-                        if ((is_null($trade->profit_loss) || $trade->profit_loss === '') && ($currentPrice >= $takeProfit || $currentPrice <= $stopLoss)) {
-                            // Update the trade record with profit/loss and RRR
-                            $trade->update([
-                                'profit_loss' => $profitLoss,
-                                'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
-                            ]);
-                            Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                        if (is_null($trade->profit_loss) || $trade->profit_loss === '') {
+                            if ($tradetype === 'BUY') {
+                                // Condition for "buy" trade type
+                                if ($currentPrice <= $entryPrice) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' Long Trade Active',
+                                    ]);
+                                    Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                            } else {
+                                // Condition for "sell" or any other trade type
+                                if ($currentPrice >= $entryPrice) {
+                                    $trade->update([
+                                        'profit_loss' => $profitLoss,
+                                        'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                                        'notes' => $symbol . ' Short Trade Active',
+                                    ]);
+                                    Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                                }
+                            }
                         }
+                        // if ((is_null($trade->profit_loss) || $trade->profit_loss === '') && ($currentPrice >= $takeProfit || $currentPrice <= $stopLoss)) {
+                        //     // Update the trade record with profit/loss and RRR
+                        //     $trade->update([
+                        //         'profit_loss' => $profitLoss,
+                        //         'rrr' => $rrr, // Ensure you have an 'rrr' column in your trades table
+                        //     ]);
+                        //     Log::channel('trades_logs')->info("Updated profit/loss for Trade ID {$trade->id}: {$profitLoss}%");
+                        // }
                         // Update the corresponding SignalPerformance record
                         $signalPerformance = SignalPerformance::where('signal_id', $trade->id)->first();
                         if ($signalPerformance) {
                             $entryPrice_performance = (float) $signalPerformance->entry_price;
                             $takeProfit_performance = (float) $signalPerformance->take_profit;
                             $stopLoss_performance = (float) $signalPerformance->stop_loss;
+                            $tradetype = $trade->tradeType->name;
 
                             // Calculate profit/loss percentage
                             $profitLoss_performance = (($currentPrice - $entryPrice_performance) / $entryPrice_performance) * 100;
-                            if ((is_null($signalPerformance->profit_loss) || $signalPerformance->profit_loss === '') && ($currentPrice >= $takeProfit_performance || $currentPrice <= $stopLoss_performance)) {
-                                $signalPerformance->update([
-                                    'current_price' => $currentPrice,
-                                    'profit_loss' => $profitLoss_performance,
-                                ]);
-                                Log::channel('trades_logs')->info("Updated SignalPerformance for Signal ID {$trade->id}: Current Price: {$currentPrice}, Profit/Loss: {$profitLoss}%");
+                            // if ((is_null($signalPerformance->profit_loss) || $signalPerformance->profit_loss === '') && ($currentPrice >= $takeProfit_performance || $currentPrice <= $stopLoss_performance)) {
+                            //     $signalPerformance->update([
+                            //         'current_price' => $currentPrice,
+                            //         'profit_loss' => $profitLoss_performance,
+                            //     ]);
+                            //     Log::channel('trades_logs')->info("Updated SignalPerformance for Signal ID {$trade->id}: Current Price: {$currentPrice}, Profit/Loss: {$profitLoss}%");
+                            // }
+
+                            if (is_null($signalPerformance->profit_loss) || $signalPerformance->profit_loss === '') {
+                                if ($tradetype === 'BUY') {
+                                    // Condition for "buy" trade type
+                                    if ($currentPrice <= $entryPrice) {
+                                        $signalPerformance->update([
+                                            'current_price' => $currentPrice,
+                                            'profit_loss' => $profitLoss_performance,
+                                        ]);
+                                        Log::channel('trades_logs')->info("Updated profit/loss for Trade ID Performance {$trade->id}: {$profitLoss}%");
+                                    }
+                                } else {
+                                    // Condition for "sell" or any other trade type
+                                    if ($currentPrice >= $entryPrice) {
+                                        $signalPerformance->update([
+                                            'current_price' => $currentPrice,
+                                            'profit_loss' => $profitLoss_performance,
+                                        ]);
+                                        Log::channel('trades_logs')->info("Updated profit/loss for Trade ID Performance {$trade->id}: {$profitLoss}%");
+                                    }
+                                }
                             }
                         } else {
                             Log::channel('trades_logs')->error("SignalPerformance record not found for Signal ID {$trade->id}");

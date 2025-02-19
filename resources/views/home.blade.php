@@ -301,8 +301,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Signal Card 1 -->
                 @foreach($topSignals as $signal)
-                        <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                            <!-- Trader & Package Info -->
+                        <!-- <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors"> -->
+                        <div class="relative bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-blue-500 transition-colors">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <div class="{{ $signal->trade_type_id == 2 ? 'bg-red-500' : 'bg-green-500' }} text-white px-4 py-1 rounded-full shadow-lg border-2 border-gray-800 font-bold text-sm whitespace-nowrap flex items-center gap-2">
+                    <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    {{ $signal->notes }}
+                    </div>
+                </div>   
+                        <!-- Trader & Package Info -->
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center">
                                 <a href="{{ route('trader.dashboard', ['username' => $trader->user->username]) }}"> <img src="{{ $package->userProfilelink->profile_picture

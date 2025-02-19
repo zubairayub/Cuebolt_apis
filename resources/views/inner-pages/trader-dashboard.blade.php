@@ -96,9 +96,16 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Signal Card 1 -->
             @foreach($topSignals as $signal)
-            <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                        <!-- Trader & Package Info -->
-                        <div class="flex items-center justify-between mb-3">
+            <!-- <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors"> -->
+                    <div class="relative bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-blue-500 transition-colors">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <div class="{{ $signal->trade_type_id == 2 ? 'bg-red-500' : 'bg-green-500' }} text-white px-4 py-1 rounded-full shadow-lg border-2 border-gray-800 font-bold text-sm whitespace-nowrap flex items-center gap-2">
+                    <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    {{ $signal->notes }}
+                    </div>
+                </div>
+                                <!-- Trader & Package Info -->
+                        <div class="flex items-center justify-between mb-3">  
                             <div class="flex items-center">
                                 <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
                                     alt="John Smith" class="w-8 h-8 rounded-full mr-2" />
@@ -107,11 +114,6 @@
                                     <p class="text-xs text-gray-400">{{ $signal->package->userProfilelink->short_info }}</p>
                                 </div>
                             </div>
-                            <!-- <button
-                                                                                                                                class="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors duration-300">
-
-                                                                                                                                <span>Follow</span>
-                                                                                                                            </button> -->
 
                             <button
                                 onclick="openPositionCalculator({{ $signal->entry_price }}, {{ $signal->stop_loss }}, {{ $signal->take_profit }}, {{ $signal->id }}, {{ Auth::id() }})"
@@ -281,8 +283,15 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @foreach($topPerformingSignals as $signal)
-            <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors">
-                        <!-- Trader & Package Info -->
+            <!-- <div class="bg-dark rounded-lg border border-gray-800 p-6 hover:border-primary transition-colors"> -->
+            <div class="relative bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-blue-500 transition-colors">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <div class="{{ $signal->trade_type_id == 2 ? 'bg-red-500' : 'bg-green-500' }} text-white px-4 py-1 rounded-full shadow-lg border-2 border-gray-800 font-bold text-sm whitespace-nowrap flex items-center gap-2">
+                    <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    {{ $signal->notes }}
+                    </div>
+                </div>           
+            <!-- Trader & Package Info -->
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center">
                                 <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&auto=format"
