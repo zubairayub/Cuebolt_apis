@@ -220,7 +220,7 @@
                                 <div class="bg-gray-700 p-1.5 rounded relative group">
                                     <div class="text-gray-400">Predicted Risk-Reward</div>
                                     <div class="font-semibold text-blue-500">
-                                        {{ number_format($signal->rrr, 2) }}
+                                        {{ number_format($signal->prrr, 2) }}
                                     </div>
 
                                     <!-- Tooltip for explanation -->
@@ -404,7 +404,7 @@
                                 <div class="bg-gray-700 p-1.5 rounded relative group">
                                     <div class="text-gray-400">Predicted Risk-Reward</div>
                                     <div class="font-semibold text-blue-500">
-                                        {{ number_format($signal->rrr, 2) }}
+                                        {{ number_format($signal->prrr, 2) }}
                                     </div>
 
                                     <!-- Tooltip for explanation -->
