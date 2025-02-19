@@ -475,7 +475,7 @@ class TraderDashboardController extends Controller
     // List of APIs to try
     $apiUrls = [
         // Binance
-        "https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol),
+        //"https://api.binance.com/api/v3/ticker/price?symbol=" . strtoupper($binanceSymbol),
         
         
         // CryptoCompare
