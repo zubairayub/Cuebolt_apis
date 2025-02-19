@@ -703,9 +703,14 @@ class PackagesController extends Controller
         }
 
         // Retrieve the top packages, ordered by win percentage
-        $topPackages = $query->with('trades.marketPair') // Eager load the trades and marketPair relationship
+        // $topPackages = $query->with('trades.marketPair') // Eager load the trades and marketPair relationship
+        //     ->orderByDesc('win_percentage')
+        //     ->get();
+        $topPackages = $query->where('user_id', $user->id) // Filter by user_id
+            ->with('trades.marketPair') // Eager load the trades and marketPair relationship
             ->orderByDesc('win_percentage')
             ->get();
+
 
         // Initialize variables for calculations
         $totalTrades = 0;
