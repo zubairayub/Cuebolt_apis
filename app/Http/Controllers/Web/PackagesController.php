@@ -722,6 +722,7 @@ class PackagesController extends Controller
         $bestPerformingPair = null;
         $pairTradeCounts = [];
         $pairWinRates = [];
+        $processedPackageIds = [];  // Array to track unique package_ids
 
         // Loop through the packages to calculate various statistics
         foreach ($topPackages as $package) {
@@ -734,9 +735,15 @@ class PackagesController extends Controller
                     $lossCount++;
                 }
 
-                // Calculate the total win rate and RRR
-                $totalWinRate += $package->win_percentage;
-                $totalRRR += $package->achieved_rrr;
+                if (!in_array($package->id, $processedPackageIds)) {
+                    // If not processed, accumulate the values
+                    $totalWinRate += $package->win_percentage;
+                    $totalRRR += $package->achieved_rrr;
+
+                    // Add the current package_id to the processed list
+                    $processedPackageIds[] = $package->id;
+                    $totalPackages++;  // Count the number of unique packages
+                }
 
                 // Count the number of trades for each pair
                 $pair = $trade->marketPair->symbol; // Get the symbol of the market pair (assuming it's available in MarketPair model)
@@ -757,8 +764,9 @@ class PackagesController extends Controller
         }
 
         // Calculate average win rate and average RRR
-        $averageWinRate =  $totalWinRate ;
-        $averageRRR =  $totalRRR ;
+        // Calculate average win rate and average RRR
+        $averageWinRate = ($totalPackages > 0) ? $totalWinRate / $totalPackages : 0;  // Average win rate (no need to multiply by 100)
+        $averageRRR = ($totalPackages > 0) ? $totalRRR / $totalPackages : 0;  // Average RRR (no need to multiply by 100)
 
         // Find the most traded pair
         arsort($pairTradeCounts); // Sort by the number of trades in descending order
